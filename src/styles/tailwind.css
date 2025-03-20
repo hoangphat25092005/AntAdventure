@@ -1,0 +1,7 @@
+/* This file imports Tailwind CSS styles and custom styles for the project. */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles can be added below */
