@@ -7,7 +7,7 @@ const RegisForm: React.FC = () => {
     return (
         <div className="flex items-center justify-center min-h-[calc(100vh-128px)] bg-cyan-500">
             <form className="bg-white p-8 rounded-[20px] w-96 border-8 border-sky-300">
-                <h2 className="text-2xl font-bold mb-6 text-center">Register your account</h2>
+                <h2 className=" text-2xl font-bold mb-6 text-center">Register your account</h2>
                 <div className="mb-4">
                     <input
                         type="text"
@@ -34,17 +34,17 @@ const RegisForm: React.FC = () => {
                 </div>
                 <button
                     type="submit"
-                    className="bg-green-700 text-xl text-white p-3 rounded-md w-full hover:bg-green-600 transition-colors"
+                    className=" bg-green-700 text-xl text-white p-3 rounded-md w-full hover:bg-green-600 transition-colors"
                 >
                     REGISTER
                 </button>
-                <div className="text-right mt-4">
-                    <span className="text-sm text-gray-600">
+                <div className="text-center mt-4">
+                    <span className=" text-sm text-gray-600">
                         Already have an account?{' '}
                         <button
                             type="button"
                             onClick={() => navigate('/login')}
-                            className="text-blue-600 hover:text-blue-800 font-medium"
+                            className=" text-blue-600 hover:text-blue-800 font-medium"
                         >
                             Log in
                         </button>

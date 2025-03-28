@@ -7,7 +7,7 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
 
     return (
         <header className={`bg-orange-500 flex justify-between items-center p-4 w-full ${className}`}>
-            <div className="text-lg font-bold">AntVenture</div>
+            <div className="text-2xl font-bold">AntVenture</div>
             <Navigation />
             <button 
                 onClick={() => navigate('/login')}

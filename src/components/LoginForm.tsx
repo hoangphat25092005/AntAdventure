@@ -30,7 +30,7 @@ const LoginForm: React.FC = () => {
                 >
                     LOGIN
                 </button>
-                <div className="text-right mt-4">
+                <div className="text-center mt-4">
                     <span className="text-sm text-gray-600">
                         Don't have an account yet?{' '}
                         <button
