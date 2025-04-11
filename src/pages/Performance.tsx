@@ -1,61 +1,88 @@
 import React from 'react';
+
 const Performance: React.FC = () => {
-    // Dữ liệu mẫu - sẽ được thay thế bằng dữ liệu từ API sau này
-    const studentInfo = {
-      bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci tation ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat. Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse molestie consequat, vel illum dolore eu feugiat nulla facilisis at vero eros et accumsan et iusto odio dignissim qui blandit praesent luptatum zzril"
-    };
-  
-    const skills = [
-      { id: 1, name: "Skill #1", progress: 65 },
-      { id: 2, name: "Skill #2", progress: 70 },
-      { id: 3, name: "Skill #3", progress: 80 },
-      { id: 4, name: "Skill #4", progress: 90 },
-    ];
-  
-    return (
-      <div className="container mx-auto px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Student Information Card */}
-          <div className="bg-sky-200/80 rounded-lg p-8 shadow-lg">
-            <div className="flex flex-col items-center mb-6">
-              <div className="w-36 h-36 bg-blue-300 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-24 h-24 text-white" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"></path>
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold mb-2">Student's Information</h2>
-            </div>
-            
-            <div className="text-sm text-gray-700">
-              <p>{studentInfo.bio}</p>
-              <p className="mt-4">{studentInfo.bio}</p>
-              <p className="mt-4">{studentInfo.bio.substring(0, studentInfo.bio.length / 2)}</p>
-            </div>
-          </div>
-          
-          {/* Performance Report Card */}
-          <div className="bg-sky-200/80 rounded-lg p-8 shadow-lg">
-            <h2 className="text-3xl font-bold mb-8">Performance Report</h2>
-            
-            <div className="space-y-8">
-              {skills.map((skill) => (
-                <div key={skill.id} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">{skill.name}</span>
-                  </div>
-                  <div className="h-8 bg-sky-200 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-orange-500 rounded-full"
-                      style={{ width: `${skill.progress}%` }}
-                    ></div>
-                  </div>
+  return (
+    <div
+      className="min-h-screen bg-teal-500 pt-10 pb-10 bg-cyan-500"
+    >
+      <div className="container mx-auto px-8">
+        <div className="flex flex-col md:flex-row gap-6 justify-center items-stretch mt-10">
+          {/* Left Column - Student Information */}
+          <div className="md:w-1/3 bg-sky-100/90 rounded-2xl p-8 shadow-2xl flex flex-col h-auto">
+            <div className="flex justify-center mb-6">
+              <div className="bg-white rounded-2xl p-4 w-60 h-44 flex items-center justify-center shadow-lg">
+                <div className="w-32 h-32 bg-sky-300 rounded-full flex items-center justify-center shadow-md"> 
+                  <svg
+                    className="w-24 h-24 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
+                  </svg>
                 </div>
-              ))}
+              </div>
+            </div>
+
+            <h2 className="text-2xl font-bold mb-4">Student's Information</h2>
+
+            <p className="text-sm leading-relaxed text-gray-700 flex-grow">
+              Student Information
+            </p>
+
+            {/* Empty space filler to match the Performance Report height */}
+            <div className="flex-grow"></div>
+          </div>
+
+          {/* Right Column - Performance Report */}
+          <div className="md:w-1/2 bg-white/95 backdrop-blur-sm rounded-2xl p-8 shadow-2xl flex flex-col h-auto">
+            <h2 className="text-3xl font-bold mb-10">Performance Report</h2>
+            <div className="space-y-8 flex-grow">
+              <div>
+                <p className="mb-3">Skill #1</p>
+                <div className="h-8 bg-sky-100 rounded-full overflow-hidden shadow-inner">
+                  <div
+                    className="h-full bg-orange-400 rounded-full shadow-md"
+                    style={{ width: '65%' }}
+                  ></div>
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-3">Skill #2</p>
+                <div className="h-8 bg-sky-100 rounded-full overflow-hidden shadow-inner">
+                  <div
+                    className="h-full bg-orange-400 rounded-full shadow-md"
+                    style={{ width: '70%' }}
+                  ></div>
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-3">Skill #3</p>
+                <div className="h-8 bg-sky-100 rounded-full overflow-hidden shadow-inner">
+                  <div
+                    className="h-full bg-orange-400 rounded-full shadow-md"
+                    style={{ width: '75%' }}
+                  ></div>
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-3">Skill #4</p>
+                <div className="h-8 bg-sky-100 rounded-full overflow-hidden shadow-inner">
+                  <div
+                    className="h-full bg-orange-400 rounded-full shadow-md"
+                    style={{ width: '85%' }}
+                  ></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
 export default Performance;
