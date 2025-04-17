@@ -1,0 +1,12 @@
+/* This file imports Tailwind CSS styles and custom styles for the project. */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@layer components {
+    .province-label {
+      @apply text-xs fill-black font-medium 
+      select-none text-center drop-shadow-sm;
+    }
+  }
+/* Custom styles can be added below */
