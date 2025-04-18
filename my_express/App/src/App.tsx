@@ -11,6 +11,7 @@ import Register from './pages/Register';
 import Question from './pages/MultiChoice';
 import Feedback from './pages/Feedback';
 import CopperDrumImage from './assets/CopperDrum.png';
+import Admin from './pages/Admin';
 
 const App: React.FC = () => {
   return (
@@ -35,6 +36,7 @@ const App: React.FC = () => {
               <Route path="/about-us" element={<div className="bg-opacity-80"><AboutUs /></div>} />
               <Route path="/multichoice" element={<div className="bg-opacity-80"><Question /></div>} />
               <Route path="/feedback" element={<div className="bg-opacity-80"><Feedback /></div>} />
+              <Route path="/admin" element={<div className="bg-opacity-80"><Admin /></div>} />
             </Routes>
           </div>
         </main>

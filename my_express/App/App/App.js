@@ -4,7 +4,7 @@ const connectDB = require("./config/database");
 const authRoutes = require("./routing/auth.route");
 const feedbackRoutes = require("./routing/feedback.route");
 const questionsRoutes = require("./routing/questions.route");
-require("dotenv").config();
+require("dotenv").config({ path: "./config/.env" });
 
 const app = express();
 connectDB();
