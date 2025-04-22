@@ -39,8 +39,8 @@ const Performance: React.FC = () => {
             <h2 className="text-3xl font-bold mb-10">Performance Report</h2>
             <div className="space-y-8 flex-grow">
               <div>
-                <p className="mb-3">Skill #1</p>
-                <div className="h-8 bg-sky-100 rounded-full overflow-hidden shadow-inner">
+                <p className="mb-3">Các tỉnh đã làm</p>
+                <div className="h-8 bg-sky-100 rounded-full overflow-hidden shadow-inner blur-xs border-4 border-slate-550">
                   <div
                     className="h-full bg-orange-400 rounded-full shadow-md"
                     style={{ width: '65%' }}
@@ -49,8 +49,8 @@ const Performance: React.FC = () => {
               </div>
 
               <div>
-                <p className="mb-3">Skill #2</p>
-                <div className="h-8 bg-sky-100 rounded-full overflow-hidden shadow-inner">
+                <p className="mb-3  ">Thời gian đã làm</p>
+                <div className="h-8 bg-sky-100 rounded-full overflow-hidden shadow-inner blur-xs border-4 border-slate-550 ">
                   <div
                     className="h-full bg-orange-400 rounded-full shadow-md"
                     style={{ width: '70%' }}
@@ -58,25 +58,6 @@ const Performance: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <p className="mb-3">Skill #3</p>
-                <div className="h-8 bg-sky-100 rounded-full overflow-hidden shadow-inner">
-                  <div
-                    className="h-full bg-orange-400 rounded-full shadow-md"
-                    style={{ width: '75%' }}
-                  ></div>
-                </div>
-              </div>
-
-              <div>
-                <p className="mb-3">Skill #4</p>
-                <div className="h-8 bg-sky-100 rounded-full overflow-hidden shadow-inner">
-                  <div
-                    className="h-full bg-orange-400 rounded-full shadow-md"
-                    style={{ width: '85%' }}
-                  ></div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
