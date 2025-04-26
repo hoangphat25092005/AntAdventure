@@ -1,0 +1,27 @@
+.province-message-popup .leaflet-popup-content-wrapper {
+    border-radius: 16px;
+    padding: 0;
+    background: white; /* Changed from transparent to white */
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1); /* Added box shadow */
+}
+
+.province-message-popup .leaflet-popup-content {
+    margin: 0;
+    width: auto !important;
+}
+
+.province-message-popup .leaflet-popup-tip-container {
+    display: none;
+}
+
+/* Optional: Add a chat bubble tail */
+.province-message-popup .leaflet-popup-content::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 15px;
+    width: 20px;
+    height: 20px;
+    background: white; /* Ensure it matches the popup background */
+    transform: rotate(45deg);
+}
