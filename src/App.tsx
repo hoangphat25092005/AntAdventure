@@ -11,20 +11,12 @@ import Register from './pages/Register';
 import Question from './pages/MultiChoice';
 import Feedback from './pages/Feedback';
 import CopperDrumImage from './assets/CopperDrum.png';
-
 const App: React.FC = () => {
   return (
     <Router>
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-grow relative bg-transparent">
-          <div className="absolute inset-0 z-0">
-            <img 
-              src={CopperDrumImage} 
-              alt="Copper Drum" 
-              className="w-full h-full object-contain opacity-70"
-            />
-          </div>
           <div className="relative z-10">
             <Routes>
               <Route path="/" element={<div className="bg-opacity-80"><Home /></div>} />
@@ -35,6 +27,7 @@ const App: React.FC = () => {
               <Route path="/about-us" element={<div className="bg-opacity-80"><AboutUs /></div>} />
               <Route path="/multichoice" element={<div className="bg-opacity-80"><Question /></div>} />
               <Route path="/feedback" element={<div className="bg-opacity-80"><Feedback /></div>} />
+             
             </Routes>
           </div>
         </main>
