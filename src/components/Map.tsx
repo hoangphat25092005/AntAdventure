@@ -117,11 +117,11 @@ const GeoJSONLayer = ({
     const isSelected = provinceId === selectedProvinceId;
     
     return {
-      fillColor: isSelected ? '#00008B' : 'skyblue', 
+      fillColor: isSelected ? '#FFA500' : 'skyblue', 
       weight: isSelected ? 3 : 2,
       opacity: 1,
       color: isSelected ? '#00008B' : '#000000', 
-      fillOpacity: isSelected ? 0.9 : 0.7
+      fillOpacity: isSelected ? 1 : 1
     };
   }, [selectedProvinceId]);
 
