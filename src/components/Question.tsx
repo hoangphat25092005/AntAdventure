@@ -54,9 +54,10 @@ const QuestionTem: React.FC = () => {
                             <text>Vung Tau</text>
                         </button>
                     </div>
-                </div>
-            </form>
-        </div>
+                  |  </div>
+         </form>
+         </div>
+
     );
 };
 

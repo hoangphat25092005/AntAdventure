@@ -11,6 +11,7 @@ import Register from './pages/Register';
 import Question from './pages/MultiChoice';
 import Feedback from './pages/Feedback';
 import CopperDrumImage from './assets/CopperDrum.png';
+
 const App: React.FC = () => {
   return (
     <Router>
