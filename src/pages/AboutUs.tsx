@@ -1,12 +1,47 @@
 import React from 'react';
+import CopperDrumImage from '../assets/CopperDrum.png';
 
 const AboutUs: React.FC = () => {
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-            <h1 className="text-4xl font-bold mb-4">About Us</h1>
-            <p className="text-lg text-center max-w-2xl">
-                Welcome to our website! We are dedicated to providing the best service possible. Our team is committed to excellence and we strive to meet your needs.
-            </p>
+        <div className="min-h-screen w-full relative">
+            <div className="absolute inset-0 bg-cyan-500 opacity-100 z-0"></div>
+            
+            <div className="absolute inset-0 z-10 flex items-center justify-center">
+                <img 
+                    src={CopperDrumImage} 
+                    alt="Copper Drum" 
+                    className="w-full h-full object-contain opacity-70"
+                />
+            </div>
+            
+            <div className="container mx-auto px-4 py-12 relative z-20">
+                <div className="bg-sky-200 rounded-3xl p-10 shadow-lg max-w-6xl mx-auto">
+                    <div className="flex flex-col md:flex-row gap-10">
+                        <div className="md:w-2/3">
+                            <h1 className="text-5xl font-bold mb-8 text-slate-900">About us</h1>
+                            
+                            <p className="text-3xl leading-relaxed text-slate-800 mb-6">
+                                AntVenture is an educational project which is designed by us, students of UIT, 
+                                to teach students culture and geography of Viet Nam. We use modern models of 
+                                teaching methods like quizzes, flash card to enhance students' efficiency in 
+                                studying and revising their works.
+                            </p>
+                        </div>
+                        
+                        <div className="md:w-1/3 flex flex-col items-center gap-8">
+                           
+                            <div className="h-32 w-full flex justify-center">
+                                {/* Ant icon will go here */}
+                            </div>
+                            
+                            
+                            <div className="h-72 w-full flex justify-center">
+                                {/* Screenshot image will go here */}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
