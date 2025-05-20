@@ -1,22 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 const Navigation: React.FC = () => {
     const location = useLocation();
+    const [isAdmin, setIsAdmin] = useState(false);
     
+    useEffect(() => {
+        checkAdminStatus();
+    }, []);
+
+    const checkAdminStatus = async () => {
+        try {
+            const response = await fetch('http://localhost:3001/api/users/checkAdmin', {
+                credentials: 'include'
+            });
+            setIsAdmin(response.ok);
+        } catch (err) {
+            console.error('Admin check failed:', err);
+            setIsAdmin(false);
+        }
+    };
+
     // Helper to determine if a link is active
     const isActive = (path: string) => location.pathname === path;
+    
+    const navLinks = [
+        { to: "/", label: "HOMEPAGE" },
+        { to: "/performance", label: "PERFORMANCE" },
+        { to: "/review", label: "REVIEW" },
+        { to: "/about-us", label: "ABOUT US" },
+        { to: "/feedback", label: "FEEDBACK" },
+    ];
+
+    // Add manage questions link for admin users
+    if (isAdmin) {
+        navLinks.push({ to: "/manage-questions", label: "MANAGE QUESTIONS" });
+    }
     
     return (
         <nav className="flex-1 flex justify-center py-2">
             <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center">
-                {[
-                    { to: "/", label: "HOMEPAGE" },
-                    { to: "/performance", label: "PERFORMANCE" },
-                    { to: "/review", label: "REVIEW" },
-                    { to: "/about-us", label: "ABOUT US" },
-                    { to: "/feedback", label: "FEEDBACK" },
-                ].map((link) => (
+                {navLinks.map((link) => (
                     <Link 
                         key={link.to}
                         to={link.to} 

@@ -4,6 +4,7 @@
   padding: 0;
   background: white;
   box-shadow: 0 3px 14px rgba(0,0,0,0.2);
+  overflow: hidden;
 }
 
 .province-popup .leaflet-popup-content {
@@ -41,4 +42,20 @@
   white-space: nowrap;
   pointer-events: none;
   text-align: center;
+}
+
+.province-popup .leaflet-popup-close-button {
+    color: #4a5568;
+    font-size: 20px;
+    padding: 5px;
+    z-index: 10;
+}
+
+/* Hover effect for the play button */
+.province-popup .group:hover .group-hover\:opacity-50 {
+    opacity: 0.5;
+}
+
+.province-popup .group:hover .group-hover\:opacity-100 {
+    opacity: 1;
 }

@@ -10,14 +10,16 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Question from './pages/MultiChoice';
 import Feedback from './pages/Feedback';
+import QuestionManagement from './pages/QuestionManagement';
+import AdminLogin from './pages/AdminLogin';
+import AdminRegister from './pages/AdminRegister';
 import CopperDrumImage from './assets/CopperDrum.png';
 
 const App: React.FC = () => {
   return (
-    <Router>
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-grow relative bg-transparent">
+    <Router>      <div className="h-screen flex flex-col fixed w-full">
+        <Header className="z-20" />
+        <main className="flex-1 overflow-y-auto bg-transparent">
           <div className="relative z-10">
             <Routes>
               <Route path="/" element={<div className="bg-opacity-80"><Home /></div>} />
@@ -25,11 +27,11 @@ const App: React.FC = () => {
               <Route path="/register" element={<div className="bg-opacity-80"><Register /></div>} />
               <Route path="/performance" element={<div className="bg-opacity-80"><Performance /></div>} />
               <Route path="/review" element={<div className="bg-opacity-80"><Review /></div>} />
-              <Route path="/about-us" element={<div className="bg-opacity-80"><AboutUs /></div>} />
-              <Route path="/multichoice" element={<div className="bg-opacity-80"><Question /></div>} />
-              <Route path="/feedback" element={<div className="bg-opacity-80"><Feedback /></div>} />
-             
-            </Routes>
+              <Route path="/about-us" element={<div className="bg-opacity-80"><AboutUs /></div>} />              <Route path="/multichoice/:provinceName" element={<div className="bg-opacity-80"><Question /></div>} />
+              <Route path="/feedback" element={<div className="bg-opacity-80"><Feedback /></div>} />              <Route path="/manage-questions" element={<div className="bg-opacity-80"><QuestionManagement /></div>} />
+              <Route path="/admin-login" element={<div className="bg-opacity-80"><AdminLogin /></div>} />
+              <Route path="/admin-register" element={<div className="bg-opacity-80"><AdminRegister /></div>} />
+             </Routes>
           </div>
         </main>
         <Footer />
