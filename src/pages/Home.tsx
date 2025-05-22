@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Map from '../components/Map';
 import Leaderboard, { sampleLeaderboardData } from '../components/Leaderboard';
 import ProvinceInfo from '../components/ProvinceInfo';
@@ -38,34 +38,34 @@ const Home: React.FC = () => {
                     </div>
                     
                     <div className="w-full md:w-1/4 space-y-6">
-                        <Leaderboard 
+                        {/* <Leaderboard  
                             data={sampleLeaderboardData} 
                             title="Top Explorers"
-                        />
+                        />*/}
                         
-                        <div className="bg-amber-50 border-8 border-amber-500 rounded-[25px] shadow-lg p-4 overflow-hidden">
+                        <div className="sticky top-4 bg-amber-50 border-8 border-amber-500 rounded-[25px] shadow-lg p-4 overflow-hidden transition-all duration-300">
                             {selectedProvince ? (
                                 <div className="text-gray-800">
                                     <h2 className="text-2xl font-bold mb-3 text-center text-amber-800">{selectedProvince.name}</h2>
                                     <div className="space-y-2">
                                         <div className="flex justify-between">
-                                            <span className="font-semibold">Capital:</span>
+                                            <span className="font-semibold">TP trung tâm:</span>
                                             <span>{selectedProvince.capital}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="font-semibold">Region:</span>
+                                            <span className="font-semibold">Vùng:</span>
                                             <span>{selectedProvince.region}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="font-semibold">Population:</span>
+                                            <span className="font-semibold">Dân số:</span>
                                             <span>{selectedProvince.population.toLocaleString()}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="font-semibold">Area:</span>
+                                            <span className="font-semibold">Diện tích:</span>
                                             <span>{selectedProvince.area.toLocaleString()} km²</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="font-semibold">Density:</span>
+                                            <span className="font-semibold">Mật độ dân số:</span>
                                             <span>{Math.round(selectedProvince.population / selectedProvince.area).toLocaleString()} people/km²</span>
                                         </div>
                                     </div>

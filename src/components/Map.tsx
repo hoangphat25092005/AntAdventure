@@ -125,22 +125,22 @@ const GeoJSONLayer = ({
     };
   }, [selectedProvinceId]);
 
-  const onEachFeature = (feature: any, layer: L.Layer) => {
-    layer.on({
-      click: (e) => {
-        const provinceName = feature.properties.Name;
-        let province = provinces.find(p => p.name === provinceName);
-        
-        if (!province) {
-          const normalizedName = provinceName.replace(/\s+/g, '').toLowerCase();
-          province = provinces.find(p => 
-            p.name.replace(/\s+/g, '').toLowerCase() === normalizedName ||
-            normalizeVietnamese(p.name).replace(/\s+/g, '').toLowerCase() === normalizedName
-          );
-        }
-        
-        const provinceId = province?.id;
+const onEachFeature = (feature: any, layer: L.Layer) => {
+  layer.on({
+    click: (e) => {
+      const provinceName = feature.properties.Name;
+      let province = provinces.find(p => p.name === provinceName);
       
+      if (!province) {
+        const normalizedName = provinceName.replace(/\s+/g, '').toLowerCase();
+        province = provinces.find(p => 
+          p.name.replace(/\s+/g, '').toLowerCase() === normalizedName ||
+          normalizeVietnamese(p.name).replace(/\s+/g, '').toLowerCase() === normalizedName
+        );
+      }
+      
+      const provinceId = province?.id;
+    
       if (province && provinceId) {
         console.log('Province clicked:', provinceName, 'ID:', provinceId, 'Matched to:', province.name);
         
@@ -170,7 +170,6 @@ const GeoJSONLayer = ({
         // Set popup information
         setPopupPosition(position);
         setPopupProvince(province);
-        
       } else {
         console.log('Province name not found in data:', provinceName);
       }
@@ -179,9 +178,27 @@ const GeoJSONLayer = ({
       L.DomEvent.stopPropagation(e);
     },
     
-    // Keep your existing hover handlers
     mouseover: (e) => {
       const layer = e.target;
+      const provinceName = feature.properties.Name;
+      let province = provinces.find(p => p.name === provinceName);
+      
+      if (!province) {
+        const normalizedName = provinceName.replace(/\s+/g, '').toLowerCase();
+        province = provinces.find(p => 
+          p.name.replace(/\s+/g, '').toLowerCase() === normalizedName ||
+          normalizeVietnamese(p.name).replace(/\s+/g, '').toLowerCase() === normalizedName
+        );
+      }
+      
+      const provinceId = province?.id;
+      
+      // Don't change style if this province is already selected
+      if (provinceId === selectedProvinceId) {
+        return;
+      }
+      
+      // Apply hover style only if not selected
       layer.setStyle({
         weight: 3,
         color: 'darkblue',
@@ -192,11 +209,44 @@ const GeoJSONLayer = ({
         layer.bringToFront();
       }
     },
-    mouseout: (e) => {
-      if (geoJsonRef.current) {
-        geoJsonRef.current.resetStyle(e.target);
-      }
-    }
+    
+  mouseout: (e) => {
+  const layer = e.target;
+  const provinceName = feature.properties.Name;
+  let province = provinces.find(p => p.name === provinceName);
+  
+  if (!province) {
+    const normalizedName = provinceName.replace(/\s+/g, '').toLowerCase();
+    province = provinces.find(p => 
+      p.name.replace(/\s+/g, '').toLowerCase() === normalizedName ||
+      normalizeVietnamese(p.name).replace(/\s+/g, '').toLowerCase() === normalizedName
+    );
+  }
+  
+  const provinceId = province?.id;
+  
+  // Only reset style if this province is not the selected one
+  if (provinceId !== selectedProvinceId) {
+    // Instead of using resetStyle which reverts to default style,
+    // explicitly apply the proper style based on selection state
+    layer.setStyle({
+      fillColor: 'skyblue',
+      weight: 2,
+      opacity: 1,
+      color: '#000000',
+      fillOpacity: 1
+    });
+  } else {
+    // Ensure the selected province maintains its orange color
+    layer.setStyle({
+      fillColor: '#FFA500',
+      weight: 3,
+      opacity: 1,
+      color: '#00008B',
+      fillOpacity: 1
+    });
+  }
+  }
   });
 };
 

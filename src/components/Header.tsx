@@ -72,8 +72,11 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
         } catch (err) {
             console.error('Logout failed:', err);
         }
-    };    return (        <header className={`bg-orange-500 flex justify-between items-center py-2 px-8 w-full ${className}`}>
-            <div className="flex items-center">
+    };    
+    
+    return (        
+        <header className={`bg-orange-500 flex justify-between items-center py-2 px-8 w-full overflow-hidden whitespace-nowrap ${className}`}>
+            <div className="flex-shrink-0 flex items-center">
                 <img 
                     src={Logo} 
                     alt="AntVenture Logo" 
@@ -81,17 +84,22 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
                 />
                 <div className="text-xl font-bold text-black">AntVenture</div>
             </div>
-            <Navigation />
-            <div className="flex items-center gap-4">
+            
+            <div className="flex-shrink-0 overflow-hidden mx-4">
+                <Navigation />
+            </div>
+            
+            <div className="flex-shrink-0 flex items-center gap-4">
                 {isAuthenticated ? (
-                    <div className="relative" ref={dropdownRef}>                        <button
+                    <div className="relative" ref={dropdownRef}>                        
+                        <button
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                             className="flex items-center px-4 py-2 space-x-2 text-white transition-colors duration-200 rounded-lg bg-sky-600 hover:bg-sky-700"
                         >
                             <div className="flex items-center justify-center w-8 h-8 font-bold rounded-full text-sky-700 bg-sky-200">
                                 {userInfo?.username.charAt(0).toUpperCase()}
                             </div>
-                            <span>{userInfo?.username}</span>
+                            <span className="hidden sm:inline">{userInfo?.username}</span>
                             <svg
                                 className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
                                 fill="none"
@@ -108,7 +116,8 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
                                 <div className="px-4 py-2 border-b border-gray-100">
                                     <p className="text-sm font-medium text-gray-900">{userInfo?.username}</p>
                                     <p className="text-sm text-gray-500">{userInfo?.email}</p>
-                                </div>                                {userInfo?.isAdmin && (
+                                </div>                                
+                                {userInfo?.isAdmin && (
                                     <>
                                         <button
                                             onClick={() => navigate('/manage-questions')}
@@ -138,7 +147,9 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
                                 </button>
                             </div>
                         )}
-                    </div>                ) : (                    <div className="flex gap-2">
+                    </div>                
+                ) : (                    
+                    <div className="flex-shrink-0 flex gap-2">
                         <button
                             onClick={() => navigate('/login')}
                             className="px-4 py-2 text-white transition-colors duration-200 bg-orange-600 rounded-lg hover:bg-orange-700"

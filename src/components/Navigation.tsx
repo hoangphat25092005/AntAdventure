@@ -26,11 +26,12 @@ const Navigation: React.FC = () => {
     
     const navLinks = [
         { to: "/", label: "HOMEPAGE" },
-        { to: "/performance", label: "PERFORMANCE" },
+        // { to: "/performance", label: "PERFORMANCE" },
         { to: "/review", label: "REVIEW" },
         { to: "/about-us", label: "ABOUT US" },
         { to: "/feedback", label: "FEEDBACK" },
-    ];    // Add admin management links
+    ];    
+    // Add admin management links
     if (isAdmin) {
         navLinks.push({ to: "/manage-questions", label: "MANAGE QUESTIONS" });
         navLinks.push({ to: "/manage-provinces", label: "MANAGE PROVINCES" });
@@ -43,10 +44,10 @@ const Navigation: React.FC = () => {
                     <Link 
                         key={link.to}
                         to={link.to} 
-                        className={`px-4 py-2 text-lg font-medium rounded-md transition-colors 
+                        className={`px-4 py-2 text-lg font-medium rounded-md transition-all duration-200
                             ${isActive(link.to)
                                 ? "bg-yellow-300/40 text-white font-bold" 
-                                : "text-white/90 hover:bg-white/10 hover:text-white"
+                                : "text-white/90 hover:bg-white/10 hover:text-sky-300 hover:-translate-y-0.5"
                             }`}
                     >
                         {link.label}
