@@ -46,12 +46,18 @@ const ProvincePopup: React.FC<ProvincePopupProps> = ({ province, position, onClo
           
           {/* Province image */}
           <img 
-            src={"/images/provinces/" + province.name.toLowerCase().replace(/\s+/g, '') + ".jpg"} 
+              src={(() => {
+              const imageUrl = province.imageUrl ? 
+               `http://localhost:3001${province.imageUrl.startsWith('/') ? province.imageUrl : `/${province.imageUrl}`}` : 
+              `https://via.placeholder.com/300x200?text=${encodeURIComponent(province.name)}`;
+              console.log('Trying to load image from:', imageUrl, 'Original imageUrl:', province.imageUrl);
+              return imageUrl;
+              })()}
             alt={province.name}
             className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-110"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = "https://via.placeholder.com/300x200?text=" + province.name;
+              target.src = `https://picsum.photos/300/200?blur`;
             }}
           />
 
@@ -65,9 +71,9 @@ const ProvincePopup: React.FC<ProvincePopupProps> = ({ province, position, onClo
           </div>
         </div>
         
-        {/* Review Card */}
+        {/* Review Card 
         <div className="group bg-white/80 backdrop-blur-sm rounded-lg p-3 transition-all duration-300 hover:shadow-lg">
-          {/* Shine effect */}
+          
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
 
           <h4 className="text-sm font-semibold text-gray-800 mb-1 group-hover:text-orange-500 transition-colors duration-300">
@@ -77,7 +83,7 @@ const ProvincePopup: React.FC<ProvincePopupProps> = ({ province, position, onClo
             {province.capital && `Capital: ${province.capital}`}
             {province.region && ` • Region: ${province.region}`}
           </p>
-        </div>
+        </div>*/}
 
         {/* Action Buttons */}
         <div className="flex gap-2">

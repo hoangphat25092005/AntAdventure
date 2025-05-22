@@ -1,6 +1,6 @@
 import React from 'react';
 import CopperDrumImage from '../assets/CopperDrum.png';
-
+import Maplong from '../assets/Maplong.jpg';
 const AboutUs: React.FC = () => {
     return (
         <div className="min-h-screen w-full relative">
@@ -30,13 +30,17 @@ const AboutUs: React.FC = () => {
                         
                         <div className="md:w-1/3 flex flex-col items-center gap-8">
                            
-                            <div className="h-32 w-full flex justify-center">
-                                {/* Ant icon will go here */}
-                            </div>
+                            {/* <div className="h-32 w-full flex justify-center"> 
+                                
+                            </div>*/}
                             
                             
-                            <div className="h-72 w-full flex justify-center">
-                                {/* Screenshot image will go here */}
+                            <div className="h-full w-full flex justify-center">
+                                <img 
+                                    src={Maplong} 
+                                    alt="Maplong" 
+                                    className="w-full h-full object-cover shadow-lg"
+                                />
                             </div>
                         </div>
                     </div>

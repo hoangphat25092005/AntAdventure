@@ -27,7 +27,7 @@ const Navigation: React.FC = () => {
     const navLinks = [
         { to: "/", label: "HOMEPAGE" },
         // { to: "/performance", label: "PERFORMANCE" },
-        { to: "/review", label: "REVIEW" },
+        //{ to: "/review", label: "REVIEW" },
         { to: "/about-us", label: "ABOUT US" },
         { to: "/feedback", label: "FEEDBACK" },
     ];    

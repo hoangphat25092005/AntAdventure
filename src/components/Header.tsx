@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import Navigation from './Navigation';
 import Logo from '../assets/Logo.png';
 
@@ -15,13 +16,19 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, right: 0 });
 
     useEffect(() => {
         checkAuth();
 
         // Close dropdown when clicking outside
         const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+            if (
+                buttonRef.current && 
+                !buttonRef.current.contains(event.target as Node) &&
+                !(event.target as Element).closest('.dropdown-menu')
+            ) {
                 setIsDropdownOpen(false);
             }
         };
@@ -29,6 +36,18 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Update dropdown position when it opens
+    useEffect(() => {
+        if (isDropdownOpen && buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setDropdownPosition({
+                top: rect.bottom + window.scrollY,
+                left: rect.left + window.scrollX,
+                right: window.innerWidth - rect.right
+            });
+        }
+    }, [isDropdownOpen]);
 
     const checkAuth = async () => {
         try {
@@ -75,7 +94,7 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
     };    
     
     return (        
-        <header className={`bg-orange-500 flex justify-between items-center py-2 px-8 w-full overflow-hidden whitespace-nowrap ${className}`}>
+        <header className={`bg-orange-500 flex justify-between items-center py-2 px-8 w-full whitespace-nowrap ${className}`}>
             <div className="flex-shrink-0 flex items-center">
                 <img 
                     src={Logo} 
@@ -91,8 +110,9 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
             
             <div className="flex-shrink-0 flex items-center gap-4">
                 {isAuthenticated ? (
-                    <div className="relative" ref={dropdownRef}>                        
+                    <div className="relative">                        
                         <button
+                            ref={buttonRef}
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                             className="flex items-center px-4 py-2 space-x-2 text-white transition-colors duration-200 rounded-lg bg-sky-600 hover:bg-sky-700"
                         >
@@ -110,9 +130,15 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
                             </svg>
                         </button>
 
-                        {/* Dropdown menu */}
-                        {isDropdownOpen && (
-                            <div className="absolute right-0 z-50 w-48 py-2 mt-2 bg-white rounded-lg shadow-xl">
+                        {/* Dropdown menu using portal */}
+                        {isDropdownOpen && createPortal(
+                            <div 
+                                className="fixed z-[9999] w-48 py-2 bg-white rounded-lg shadow-xl dropdown-menu"
+                                style={{
+                                    top: `${dropdownPosition.top}px`,
+                                    right: `${dropdownPosition.right}px`,
+                                }}
+                            >
                                 <div className="px-4 py-2 border-b border-gray-100">
                                     <p className="text-sm font-medium text-gray-900">{userInfo?.username}</p>
                                     <p className="text-sm text-gray-500">{userInfo?.email}</p>
@@ -120,13 +146,19 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
                                 {userInfo?.isAdmin && (
                                     <>
                                         <button
-                                            onClick={() => navigate('/manage-questions')}
+                                            onClick={() => {
+                                                navigate('/manage-questions');
+                                                setIsDropdownOpen(false);
+                                            }}
                                             className="w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-sky-50"
                                         >
                                             Manage Questions
                                         </button>
                                         <button
-                                            onClick={() => navigate('/manage-provinces')}
+                                            onClick={() => {
+                                                navigate('/manage-provinces');
+                                                setIsDropdownOpen(false);
+                                            }}
                                             className="w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-sky-50"
                                         >
                                             Manage Provinces
@@ -134,7 +166,10 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
                                     </>
                                 )}
                                 <button
-                                    onClick={() => navigate('/performance')}
+                                    onClick={() => {
+                                        navigate('/performance');
+                                        setIsDropdownOpen(false);
+                                    }}
                                     className="w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-sky-50"
                                 >
                                     My Performance
@@ -145,7 +180,8 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
                                 >
                                     Logout
                                 </button>
-                            </div>
+                            </div>,
+                            document.body
                         )}
                     </div>                
                 ) : (                    

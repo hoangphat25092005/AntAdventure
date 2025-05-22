@@ -5,6 +5,7 @@ export interface Province {
   population: number;
   area: number;
   region: string;
+  imageUrl?: string;
 }
 
 // Information for all 63 provinces in Vietnam
@@ -15,7 +16,8 @@ export const provinces: Province[] = [
     capital: "Hà Nội",
     population: 8053663,
     area: 3358.9,
-    region: "Red River Delta"
+    region: "Red River Delta",
+    imageUrl: "/images/provinces/hanoi.jpg"
   },
   {
     id: "02",
@@ -23,7 +25,8 @@ export const provinces: Province[] = [
     capital: "Hồ Chí Minh",
     population: 8993082,
     area: 2095.5,
-    region: "Southeast"
+    region: "Southeast",
+    imageUrl: "/images/provinces/hochiminh.jpg"
   },
   {
     id: "03",
@@ -31,7 +34,8 @@ export const provinces: Province[] = [
     capital: "Hải Phòng",
     population: 2029407,
     area: 1561.8,
-    region: "Red River Delta"
+    region: "Red River Delta",
+    
   },
   {
     id: "04",

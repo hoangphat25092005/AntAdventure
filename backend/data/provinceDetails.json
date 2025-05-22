@@ -1,0 +1,50 @@
+{
+    "01": {
+        "id": "01",
+        "name": "Hà Nội",
+        "introduction": "Hanoi is the capital city of Vietnam, known for its centuries-old architecture and a rich culture with Southeast Asian, Chinese and French influences.",
+        "imageUrl": "/images/provinces/hanoi.jpg",
+        "famousFor": [
+            "Old Quarter",
+            "Vietnamese cuisine",
+            "Ancient temples and pagodas"
+        ],
+        "attractions": [
+            "Hoan Kiem Lake",
+            "Temple of Literature",
+            "Ho Chi Minh Mausoleum"
+        ]
+    },
+    "02": {
+        "id": "02",
+        "name": "Hồ Chí Minh",
+        "introduction": "Ho Chi Minh City (formerly Saigon) is a bustling metropolis and economic hub in southern Vietnam.",
+        "imageUrl": "/images/provinces/hochiminh.jpg",
+        "famousFor": [
+            "Modern architecture",
+            "Street food",
+            "Historical sites"
+        ],
+        "attractions": [
+            "Ben Thanh Market",
+            "Cu Chi Tunnels",
+            "Notre Dame Cathedral"
+        ]
+    },
+    "03": {
+        "id": "03",
+        "name": "Hải Phòng",
+        "introduction": "Hai Phong is a major port city in northeastern Vietnam, known for its rich history and beautiful beaches.",
+        "imageUrl": "/images/provinces/haiphong.jpg",
+        "famousFor": [
+            "Port culture",
+            "Colonial architecture",
+            "Seafood cuisine"
+        ],
+        "attractions": [
+            "Do Son Beach",
+            "Cat Ba Island",
+            "Du Hang Pagoda"
+        ]
+    }
+}
