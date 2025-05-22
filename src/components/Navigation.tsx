@@ -30,11 +30,10 @@ const Navigation: React.FC = () => {
         { to: "/review", label: "REVIEW" },
         { to: "/about-us", label: "ABOUT US" },
         { to: "/feedback", label: "FEEDBACK" },
-    ];
-
-    // Add manage questions link for admin users
+    ];    // Add admin management links
     if (isAdmin) {
         navLinks.push({ to: "/manage-questions", label: "MANAGE QUESTIONS" });
+        navLinks.push({ to: "/manage-provinces", label: "MANAGE PROVINCES" });
     }
     
     return (

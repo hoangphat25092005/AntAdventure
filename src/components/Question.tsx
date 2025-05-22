@@ -50,10 +50,12 @@ const QuestionTem: React.FC<QuestionProps> = ({ provinceName = 'Unknown Province
             setIsLoading(true);
             setError(null);
 
-            try {
-                // Check authentication first
-                const authResponse = await fetch('http://localhost:3001/api/users/checkAuth', {
-                    credentials: 'include'
+            try {                // Check authentication first
+                const authResponse = await fetch('http://localhost:3001/api/users/check-auth', {
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
                 });
 
                 if (!authResponse.ok) {

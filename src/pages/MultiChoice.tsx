@@ -9,9 +9,11 @@ const Question: React.FC = () => {
 
     useEffect(() => {
         const checkAuthStatus = async () => {
-            try {
-                const response = await fetch('http://localhost:3001/api/users/checkAuth', {
-                    credentials: 'include'
+            try {                const response = await fetch('http://localhost:3001/api/users/check-auth', {
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
                 });
                 setIsAuthenticated(response.ok);
             } catch (err) {

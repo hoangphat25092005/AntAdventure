@@ -31,49 +31,67 @@ const ProvincePopup: React.FC<ProvincePopupProps> = ({ province, position, onClo
       eventHandlers={{
         popupclose: onClose
       }}
-    >      <div className="bg-white rounded-lg shadow-md p-3 w-48 flex flex-col">
+    >      
+      <div className="bg-gradient-to-br from-[#e8f4f6] to-[#d1e9ec] rounded-lg shadow-md p-4 w-72 flex flex-col gap-3">
         {/* Province name at the top */}
-        <h3 className="text-lg font-bold text-center mb-2 text-orange-600">{province.name}</h3>
+        <h3 className="text-lg font-bold text-center text-orange-600">{province.name}</h3>
         
-        {/* Image section */}
+        {/* Image section with hover effect */}
         <div 
-          className="w-full h-24 bg-gray-100 rounded-lg mb-3 overflow-hidden flex items-center justify-center cursor-pointer relative group"
+          className="group relative w-full h-32 rounded-lg overflow-hidden cursor-pointer"
           onClick={handlePlayClick}
         >
+          {/* Background gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
+          
+          {/* Province image */}
           <img 
-            src={"/placeholder.jpg"} 
+            src={"/images/provinces/" + province.name.toLowerCase().replace(/\s+/g, '') + ".jpg"} 
             alt={province.name}
-            className="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-50"
+            className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-110"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.src = "https://via.placeholder.com/100x75?text=" + province.name;
+              target.src = "https://via.placeholder.com/300x200?text=" + province.name;
             }}
           />
+
+          {/* Play button overlay */}
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <button 
               className="bg-orange-500 text-white px-4 py-2 rounded-full font-bold shadow-lg transform hover:scale-105 transition-transform duration-200"
-              onClick={handlePlayClick}
             >
               PLAY NOW
             </button>
           </div>
         </div>
         
-        {/* Province info */}
-        <div className="mb-2">
-          <h4 className="text-sm font-semibold mb-1 text-gray-700">About {province.name}</h4>
-          <p className="text-xs text-gray-600">
-            Explore the beauty of {province.name}.
+        {/* Review Card */}
+        <div className="group bg-white/80 backdrop-blur-sm rounded-lg p-3 transition-all duration-300 hover:shadow-lg">
+          {/* Shine effect */}
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+
+          <h4 className="text-sm font-semibold text-gray-800 mb-1 group-hover:text-orange-500 transition-colors duration-300">
+            About {province.name}
+          </h4>
+          <p className="text-xs text-gray-600 mb-2 line-clamp-3 transform transition-all duration-500 hover:translate-x-1">
+            {province.capital && `Capital: ${province.capital}`}
+            {province.region && ` • Region: ${province.region}`}
           </p>
         </div>
-        
-        {/* Play button at the bottom */}
-        <div className="mt-auto">
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
           <button 
-            className="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-1.5 px-2 rounded-lg text-sm transition-colors"
+            className="flex-1 bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors"
             onClick={handlePlayClick}
           >
-            Play
+            Play Quiz
+          </button>
+          <button 
+            className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors"
+            onClick={() => navigate(`/review/${province.name.toLowerCase().replace(/\s+/g, '-')}`)}
+          >
+            Full Review
           </button>
         </div>
       </div>

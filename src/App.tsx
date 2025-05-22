@@ -13,6 +13,7 @@ import Feedback from './pages/Feedback';
 import QuestionManagement from './pages/QuestionManagement';
 import AdminLogin from './pages/AdminLogin';
 import AdminRegister from './pages/AdminRegister';
+import ProvinceManagement from './pages/ProvinceManagement';
 import CopperDrumImage from './assets/CopperDrum.png';
 
 const App: React.FC = () => {
@@ -26,9 +27,10 @@ const App: React.FC = () => {
               <Route path="/login" element={<div className="bg-opacity-80"><Login /></div>} />
               <Route path="/register" element={<div className="bg-opacity-80"><Register /></div>} />
               <Route path="/performance" element={<div className="bg-opacity-80"><Performance /></div>} />
-              <Route path="/review" element={<div className="bg-opacity-80"><Review /></div>} />
+              <Route path="/review/:provinceName" element={<div className="bg-opacity-80"><Review /></div>} />
               <Route path="/about-us" element={<div className="bg-opacity-80"><AboutUs /></div>} />              <Route path="/multichoice/:provinceName" element={<div className="bg-opacity-80"><Question /></div>} />
               <Route path="/feedback" element={<div className="bg-opacity-80"><Feedback /></div>} />              <Route path="/manage-questions" element={<div className="bg-opacity-80"><QuestionManagement /></div>} />
+              <Route path="/manage-provinces" element={<div className="bg-opacity-80"><ProvinceManagement /></div>} />
               <Route path="/admin-login" element={<div className="bg-opacity-80"><AdminLogin /></div>} />
               <Route path="/admin-register" element={<div className="bg-opacity-80"><AdminRegister /></div>} />
              </Routes>
