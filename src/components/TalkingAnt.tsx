@@ -42,16 +42,17 @@ const TalkingAnt: React.FC = () => {
     // Replace the current message with one from the appropriate set
     if (showMessage) {
       const randomIndex = Math.floor(Math.random() * selectedMessages.length);
-      setMessage(selectedMessages[randomIndex]);
+      setMessage("Hi! " + selectedMessages[randomIndex]);
     }
-  }, [location.pathname, isProvincePage]); // Re-run when path changes
+  }, [location.pathname, isProvincePage, showMessage]); // Re-run when path changes
 
   // Change message every 10 seconds
   useEffect(() => {
     const changeMessage = () => {
       const selectedMessages = isProvincePage ? provinceMessages : generalMessages;
       const randomIndex = Math.floor(Math.random() * selectedMessages.length);
-      setMessage(selectedMessages[randomIndex]);
+      // Make the ant say "Hi!" first, then display the selected message
+      setMessage("Hi! " + selectedMessages[randomIndex]);
       setShowMessage(true);
       setIsAnimating(true);
       
@@ -76,10 +77,23 @@ const TalkingAnt: React.FC = () => {
       clearInterval(intervalId);
     };
   }, [isProvincePage]);
+
   // Position based on current page
   const positionClass = isProvincePage 
     ? "fixed bottom-32 right-10 z-30" // Below province details
     : "fixed bottom-24 right-6 z-30"; // Default position
+  // Always keep the ant running unless it's talking
+  useEffect(() => {
+    if (!isAnimating) {
+      // Make sure the ant is in walking state when not talking
+      const walkingInterval = setInterval(() => {
+        // This empty interval ensures React keeps rerendering the component
+        // which maintains the animation state
+      }, 100);
+      
+      return () => clearInterval(walkingInterval);
+    }
+  }, [isAnimating]);
 
   return (
     <div className={`${positionClass} flex items-end`}>
@@ -92,7 +106,7 @@ const TalkingAnt: React.FC = () => {
         </div>
       )}
         {/* Talking ant */}
-      <div className={`logo-container ${isAnimating ? 'ant-talking' : ''}`}>
+      <div className={`logo-container ${isAnimating ? 'ant-talking' : 'ant-walking'}`}>
         <img 
           src={Logo} 
           alt="Talking Ant" 
@@ -101,7 +115,7 @@ const TalkingAnt: React.FC = () => {
             if (!showMessage) {
               const selectedMessages = isProvincePage ? provinceMessages : generalMessages;
               const randomIndex = Math.floor(Math.random() * selectedMessages.length);
-              setMessage(selectedMessages[randomIndex]);
+              setMessage("Hi! " + selectedMessages[randomIndex]);
               setShowMessage(true);
               setIsAnimating(true);
               

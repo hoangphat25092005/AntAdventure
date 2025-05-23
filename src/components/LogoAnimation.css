@@ -117,3 +117,27 @@
 .ant-talking {
   animation: antTalking 2s infinite;
 }
+
+/* Continuous walking animation for the ant */
+@keyframes antWalking {
+  0% { 
+    transform: translateX(-3px) rotate(-3deg) scaleY(0.96) translateY(1px); 
+  }
+  25% {
+    transform: translateX(0px) rotate(0deg) scaleY(1.03) translateY(-2px);
+  }
+  50% {
+    transform: translateX(3px) rotate(3deg) scaleY(0.96) translateY(1px);
+  }
+  75% {
+    transform: translateX(0px) rotate(0deg) scaleY(1.03) translateY(-2px);
+  }
+  100% {
+    transform: translateX(-3px) rotate(-3deg) scaleY(0.96) translateY(1px);
+  }
+}
+
+.ant-walking {
+  animation: antWalking 1.2s infinite;
+  animation-timing-function: ease-in-out;
+}

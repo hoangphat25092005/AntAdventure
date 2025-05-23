@@ -93,13 +93,12 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
             console.error('Logout failed:', err);
         }
     };    
-    
-    return (        
-        <header className={`bg-orange-500 flex justify-between items-center py-2 px-8 w-full whitespace-nowrap ${className}`}>            <div className="flex-shrink-0 flex items-center">                <div className="logo-container">
+      return (        
+        <header className={`bg-orange-500 flex justify-between items-center py-2 px-8 w-full whitespace-nowrap border-b-2 border-gray-700 shadow-lg ${className}`}>            <div className="flex-shrink-0 flex items-center"><div className="logo-container">
                     <img 
                         src={Logo} 
                         alt="AntVenture Logo" 
-                        className="w-10 h-10 mr-2 logo-image logo-walking logo-hover-shake" 
+                        className="w-10 h-10 mr-2 logo-image ant-walking logo-hover-shake" 
                     />
                 </div>
                 <div className="text-xl font-bold text-black">AntVenture</div>
