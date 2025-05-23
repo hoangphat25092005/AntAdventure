@@ -150,15 +150,18 @@ const QuestionManager: React.FC = () => {
     };
 
     const handleEdit = (question: Question) => {
-        setFormData({
-            provinceName: question.provinceName,
-            question: question.question,
-            options: question.options,
-            correctAnswer: question.correctAnswer
-        });
-        setSelectedQuestionId(question._id || '');
-        setEditMode(true);
-    };
+    setFormData({
+        provinceName: question.provinceName,
+        question: question.question,
+        options: question.options,
+        correctAnswer: question.correctAnswer
+    });
+    setSelectedQuestionId(question._id || '');
+    setEditMode(true);
+    
+    // Scroll to the top of the form for better UX
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
     const handleDelete = async (id: string) => {
         if (!window.confirm('Are you sure you want to delete this question?')) return;
