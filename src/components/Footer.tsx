@@ -1,17 +1,18 @@
 import React from 'react';
-import Logo from '../assets/Logo.png'; 
+import Logo from '../assets/Logo.png';
+import './LogoAnimation.css';
 
 const Footer: React.FC<{ className?: string }> = ({ className }) => {    return (
         <footer className={`bg-orange-500 py-2 px-8 w-full ${className}`}>
             <div className="container mx-auto">
                 <div className="flex justify-between items-center">
-                    {/* Left side - Logo and name */}                    <div className="w-full md:w-auto flex-shrink-0 mb-3 md:mb-0">
-                        <div className="flex items-center">
-                            <img 
-                                src={Logo} 
-                                alt="AntVenture Logo" 
-                                className="w-8 h-8 mr-2" 
-                            />
+                    {/* Left side - Logo and name */}                    <div className="w-full md:w-auto flex-shrink-0 mb-3 md:mb-0">                        <div className="flex items-center">                            <div className="logo-container">
+                                <img 
+                                    src={Logo} 
+                                    alt="AntVenture Logo" 
+                                    className="w-10 h-10 mr-2 logo-image logo-walking logo-hover-grow" 
+                                />
+                            </div>
                             <div className="text-xl font-bold text-black">AntVenture</div>
                         </div>
                     </div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import Navigation from './Navigation';
 import Logo from '../assets/Logo.png';
+import './LogoAnimation.css';
 
 interface UserInfo {
     username: string;
@@ -94,13 +95,13 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
     };    
     
     return (        
-        <header className={`bg-orange-500 flex justify-between items-center py-2 px-8 w-full whitespace-nowrap ${className}`}>
-            <div className="flex-shrink-0 flex items-center">
-                <img 
-                    src={Logo} 
-                    alt="AntVenture Logo" 
-                    className="w-8 h-8 mr-2" 
-                />
+        <header className={`bg-orange-500 flex justify-between items-center py-2 px-8 w-full whitespace-nowrap ${className}`}>            <div className="flex-shrink-0 flex items-center">                <div className="logo-container">
+                    <img 
+                        src={Logo} 
+                        alt="AntVenture Logo" 
+                        className="w-10 h-10 mr-2 logo-image logo-walking logo-hover-shake" 
+                    />
+                </div>
                 <div className="text-xl font-bold text-black">AntVenture</div>
             </div>
             
