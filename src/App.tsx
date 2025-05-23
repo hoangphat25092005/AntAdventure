@@ -15,7 +15,7 @@ import AdminLogin from './pages/AdminLogin';
 import AdminRegister from './pages/AdminRegister';
 import ProvinceManagement from './pages/ProvinceManagement';
 import CopperDrumImage from './assets/CopperDrum.png';
-
+import QuestionImport from './pages/Import';
 const App: React.FC = () => {
   return (
     <Router>      <div className="h-screen flex flex-col fixed w-full">
@@ -33,6 +33,7 @@ const App: React.FC = () => {
               <Route path="/manage-provinces" element={<div className="bg-opacity-80"><ProvinceManagement /></div>} />
               <Route path="/admin-login" element={<div className="bg-opacity-80"><AdminLogin /></div>} />
               <Route path="/admin-register" element={<div className="bg-opacity-80"><AdminRegister /></div>} />
+              <Route path="/import" element={<QuestionImport />} />
              </Routes>
           </div>
         </main>
