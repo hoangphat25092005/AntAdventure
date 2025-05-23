@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import TalkingAnt from './components/TalkingAnt';
 import Home from './pages/Home';
 import Performance from './pages/Performance';
 import Review from './pages/Review';
@@ -37,6 +38,7 @@ const App: React.FC = () => {
              </Routes>
           </div>
         </main>
+        <TalkingAnt />
         <Footer />
       </div>
     </Router>
