@@ -25,7 +25,7 @@ const App: React.FC = () => {
 
   return (
     <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID || ''}>
-      <Router>      <div className="h-screen flex flex-col fixed w-full">
+      <Router>      <div className="fixed flex flex-col w-full h-screen">
         <Header className="z-20" />
         <main className="flex-1 overflow-y-auto bg-transparent">
           <div className="relative z-10">

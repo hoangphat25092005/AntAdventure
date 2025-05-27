@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import * as XLSX from 'xlsx';
+// @ts-ignore
+import { read, utils } from 'xlsx';
+// @ts-ignore
 import axios from 'axios';
 
 const QuestionImport: React.FC = () => {
@@ -59,17 +61,16 @@ const QuestionImport: React.FC = () => {
   const processExcel = (file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      try {
-        const data = e.target?.result;
+      try {        const data = e.target?.result;
         if (!data) {
           setError('Failed to read file data');
           return;
         }
         
-        const workbook = XLSX.read(data, { type: 'binary' });
+        const workbook = read(data, { type: 'binary' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+        const json = utils.sheet_to_json(worksheet, { header: 1, defval: "" });
         
         // Take first rows for preview
         setPreview(json.slice(0, 15));
@@ -218,17 +219,17 @@ const QuestionImport: React.FC = () => {
   };
   
   if (!isAdmin) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-cyan-500 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-lg p-4 md:p-6">
-        <h1 className="text-2xl font-bold mb-6">Import Questions from Excel</h1>
+    <div className="min-h-screen p-4 bg-cyan-500 md:p-8">
+      <div className="max-w-6xl p-4 mx-auto bg-white rounded-lg shadow-lg md:p-6">
+        <h1 className="mb-6 text-2xl font-bold">Import Questions from Excel</h1>
         
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+        <div className="p-4 mb-6 border-l-4 border-yellow-400 bg-yellow-50">
           <p className="font-medium">Instructions:</p>
-          <ul className="list-disc list-inside ml-4 text-sm">
+          <ul className="ml-4 text-sm list-disc list-inside">
             <li>Your Excel file should have headers in the first row</li>
             <li>Column A: Question number</li>
             <li>Column B: Question text</li>
@@ -252,7 +253,7 @@ const QuestionImport: React.FC = () => {
         
         {questions.length > 0 && (
           <>
-            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2">
               <div>
                 <label className="block mb-2 font-medium">Import Options:</label>
                 <div className="space-y-2">
@@ -295,7 +296,7 @@ const QuestionImport: React.FC = () => {
               <div>
                 <label className="block mb-2 font-medium">
                   Filter by Province:
-                  {wipeOption === 'replace' && <span className="text-red-500 ml-1">*</span>}
+                  {wipeOption === 'replace' && <span className="ml-1 text-red-500">*</span>}
                 </label>
                 <select
                   value={provinceFilter}
@@ -321,7 +322,7 @@ const QuestionImport: React.FC = () => {
               </div>
             </div>
             
-            <div className="mb-4 p-3 bg-green-100 text-green-700 rounded">
+            <div className="p-3 mb-4 text-green-700 bg-green-100 rounded">
               <p className="font-medium">{questions.length} questions parsed from Excel:</p>
               <div className="mt-2 text-sm">
                 {provinces.map(province => (
@@ -335,22 +336,22 @@ const QuestionImport: React.FC = () => {
         )}
         
         {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">{error}</div>
+          <div className="p-3 mb-4 text-red-700 bg-red-100 rounded">{error}</div>
         )}
         
         {importStatus && (
-          <div className="mb-4 p-3 bg-blue-100 text-blue-700 rounded">{importStatus}</div>
+          <div className="p-3 mb-4 text-blue-700 bg-blue-100 rounded">{importStatus}</div>
         )}
         
         {preview.length > 0 && (
           <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">Preview:</h2>
+            <h2 className="mb-2 text-xl font-semibold">Preview:</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full bg-white border">
                 <thead>
                   <tr className="bg-gray-100">
                     {preview[0].map((cell: any, i: number) => (
-                      <th key={i} className="px-2 py-1 border text-left text-xs md:text-sm">
+                      <th key={i} className="px-2 py-1 text-xs text-left border md:text-sm">
                         {cell || (i === 0 ? '#' : 
                           i === 1 ? 'Question' : 
                           i === 2 ? 'A' :
@@ -381,7 +382,7 @@ const QuestionImport: React.FC = () => {
         <div className="flex justify-between">
           <button
             onClick={handleImport}
-            className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors disabled:opacity-50"
+            className="px-6 py-2 text-white transition-colors bg-blue-500 rounded hover:bg-blue-600 disabled:opacity-50"
             disabled={importing || 
                     questions.length === 0 || 
                     (wipeOption === 'replace' && !provinceFilter)}
@@ -391,7 +392,7 @@ const QuestionImport: React.FC = () => {
           
           <button
             onClick={() => navigate('/question-management')}
-            className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 transition-colors"
+            className="px-6 py-2 text-white transition-colors bg-gray-500 rounded hover:bg-gray-600"
             disabled={importing}
           >
             Back

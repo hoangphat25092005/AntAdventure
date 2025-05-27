@@ -1,35 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { provinces } from '../data/provinceData';
-
-interface Question {
-    _id?: string;
-    provinceName: string;
-    question: string;
-    options: string[];
-    correctAnswer: number;
-    image?: string;
-}
+import * as XLSX from 'xlsx';
+import axios from 'axios';
+import { provinces as provinceData } from '../data/provinceData';
 
 const QuestionManager: React.FC = () => {
     const navigate = useNavigate();
-    const [isAdmin, setIsAdmin] = useState(false);
-    const [questions, setQuestions] = useState<Question[]>([]);
-    const [selectedProvince, setSelectedProvince] = useState<string>('');
-    const [formData, setFormData] = useState<Question>({
-        provinceName: '',
-        question: '',
-        options: ['', '', '', ''],
-        correctAnswer: 0,
-    });
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [editMode, setEditMode] = useState(false);
-    const [selectedQuestionId, setSelectedQuestionId] = useState<string>('');
+    const [isAdmin, setIsAdmin] = useState(true);
+    const [activeTab, setActiveTab] = useState<'manage' | 'import'>('manage');
+    
+    // Import file states
+    const [file, setFile] = useState<File | null>(null);
+    const [preview, setPreview] = useState<any[]>([]);
+    const [questions, setQuestions] = useState<any[]>([]);
+    const [importing, setImporting] = useState(false);
+    const [importStatus, setImportStatus] = useState<string>('');
     const [error, setError] = useState('');
+    const [provinceFilter, setProvinceFilter] = useState<string>('');
+    const [provinces, setProvinces] = useState<string[]>([]);
+    const [wipeOption, setWipeOption] = useState<'keep'|'wipe'|'replace'>('replace');
 
+    // Original import button states
+    const [isImporting, setIsImporting] = useState(false);
+    const [importError, setImportError] = useState<string | null>(null);
+    const [importSuccess, setImportSuccess] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    
     useEffect(() => {
         checkAdminStatus();
-        fetchQuestions();
     }, []);
 
     const checkAdminStatus = async () => {
@@ -47,369 +45,444 @@ const QuestionManager: React.FC = () => {
             console.error('Admin check failed:', err);
             navigate('/');
         }
-    };    const fetchQuestions = async () => {
-        try {
-            const response = await fetch('http://localhost:3001/api/questions/getAllQuestions', {
-                credentials: 'include'
-            });
-            if (response.ok) {
-                const data = await response.json();
-                // Sort questions by province name for consistent display
-                const sortedData = data.sort((a: Question, b: Question) => 
-                    a.provinceName.localeCompare(b.provinceName, 'vi')
-                );
-                setQuestions(sortedData);
-                console.log('Fetched questions:', sortedData); // Debug log
-            } else {
-                const errorData = await response.json();
-                console.error('Failed to fetch questions:', errorData);
-                setError(errorData.message || 'Failed to fetch questions');
-            }
-        } catch (err) {
-            console.error('Error fetching questions:', err);
-            setError('Failed to fetch questions');
+    };
+
+    // Function to convert letter key (A, B, C, D) to numeric index (0, 1, 2, 3)
+    const keyToIndex = (key: string) => {
+        switch (key) {
+            case 'A': return 0;
+            case 'B': return 1;
+            case 'C': return 2;
+            case 'D': return 3;
+            default: return 0; // Default to first option if key is invalid
         }
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handleOptionChange = (index: number, value: string) => {
-        const newOptions = [...formData.options];
-        newOptions[index] = value;
-        setFormData(prev => ({
-            ...prev,
-            options: newOptions
-        }));
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setError('');
+        setPreview([]);
+        setQuestions([]);
+        setProvinces([]);
+        setImportStatus('');
+        
         if (e.target.files && e.target.files[0]) {
-            setSelectedFile(e.target.files[0]);
+            setFile(e.target.files[0]);
+            processExcel(e.target.files[0]);
         }
-    };    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!isAdmin) return;
+    };
 
+    const processExcel = (file: File) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = e.target?.result;
+                if (!data) {
+                    setError('Failed to read file data');
+                    return;
+                }
+                
+                const workbook = XLSX.read(data, { type: 'binary' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+                
+                // Take first rows for preview
+                setPreview(json.slice(0, 15));
+                
+                // Parse questions
+                const parsedQuestions = parseQuestions(json);
+                setQuestions(parsedQuestions);
+                
+                // Extract unique province names
+                const uniqueProvinces = Array.from(new Set(parsedQuestions.map(q => q.provinceName))).sort();
+                setProvinces(uniqueProvinces);
+                
+            } catch (error) {
+                console.error('Error reading Excel file:', error);
+                setError('Error reading Excel file. Please check the format.');
+            }
+        };
+        reader.readAsBinaryString(file);
+    };
+
+    const parseQuestions = (data: any[]) => {
+        const questions = [];
+        let currentProvince = null;
+        let isHeaderRow = true;
+        
+        for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
+            const row = data[rowIndex];
+            
+            // Skip empty rows
+            if (!row.some((cell: string) => cell !== '')) {
+                continue;
+            }   
+            
+            // Check if this is the header row with column names
+            if (isHeaderRow) {
+                isHeaderRow = false;
+                continue; // Skip the header row with column identifiers
+            }
+            
+            // Check if this is a province row (should have text in column B and empty in columns A, C-G)
+            if (row[0] !== '' && (row[1] === '' || !row[1]) && !row[2] && !row[3] && !row[4] && !row[5]) {
+                currentProvince = row[0].trim();
+                continue;
+            }
+            
+            // If we have a province set and this is a question row (has a number in first column)
+            if (currentProvince && row[0] && !isNaN(parseInt(row[0]))) {
+                // Question text is in column 1
+                const questionText = row[1];
+                if (!questionText) continue; // Skip if no question text
+                
+                // Options A, B, C, D are in columns 2-5
+                const options = [
+                    row[2] || '', // Option A
+                    row[3] || '', // Option B
+                    row[4] || '', // Option C
+                    row[5] || ''  // Option D
+                ];
+                
+                // Get the correct answer key from column 6
+                const correctAnswerKey = row[6] || 'A';
+                const correctAnswerIndex = keyToIndex(correctAnswerKey);
+                
+                // Image URL is in column 7
+                const imageUrl = row[7] ? row[7].toString().trim() : '';
+                
+                questions.push({
+                    provinceName: currentProvince,
+                    question: questionText,
+                    options: options,
+                    correctAnswer: correctAnswerIndex,
+                    ...(imageUrl && imageUrl.startsWith('http') ? { image: imageUrl } : {})
+                });
+            }
+        }
+        
+        return questions;
+    };
+
+    const handleImport = async () => {
+        if (questions.length === 0) {
+            setError('No valid questions to import');
+            return;
+        }
+        
+        setImporting(true);
+        setImportStatus('Starting import...');
+        setError('');
+        
         try {
-            // Ensure the province name is selected from the dropdown
-            if (!formData.provinceName) {
-                setError('Please select a province');
+            const questionsToImport = provinceFilter ? 
+                questions.filter(q => q.provinceName === provinceFilter) : 
+                questions;
+            
+            if (questionsToImport.length === 0) {
+                setError(`No questions found for province "${provinceFilter}"`);
+                setImporting(false);
                 return;
             }
-
-            const formDataToSend = new FormData();
-            // Use the exact province name from the provinces data to ensure consistency
-            const selectedProvince = provinces.find(p => p.name === formData.provinceName);
-            if (!selectedProvince) {
-                setError('Invalid province selected');
-                return;
+            
+            // First, handle wiping if needed
+            if (wipeOption === 'wipe') {
+                setImportStatus('Wiping all existing questions...');
+                await axios.delete('http://localhost:3001/api/questions/wipe', { withCredentials: true });
+            } else if (wipeOption === 'replace' && provinceFilter) {
+                setImportStatus(`Wiping existing questions for province "${provinceFilter}"...`);
+                await axios.delete(`http://localhost:3001/api/questions/wipe/${encodeURIComponent(provinceFilter)}`, 
+                    { withCredentials: true });
             }
-              formDataToSend.append('provinceName', selectedProvince.name);
-            formDataToSend.append('question', formData.question.trim());
-            formDataToSend.append('options', JSON.stringify(formData.options.map(opt => opt.trim())));
-            formDataToSend.append('correctAnswer', formData.correctAnswer.toString());
             
-            if (selectedFile) {
-                formDataToSend.append('image', selectedFile);
-            } else if (editMode) {
-                // If editing and no new file selected, tell the server to keep the existing image
-                formDataToSend.append('keepExistingImage', 'true');
-            }            // Log form data contents for debugging
-            console.log('Form data preview:', {
-                provinceName: formData.provinceName,
-                question: formData.question,
-                options: formData.options,
-                correctAnswer: formData.correctAnswer,
-                hasImage: !!selectedFile
-            });
-            const url = editMode
-                ? `http://localhost:3001/api/questions/updateQuestion/${selectedQuestionId}`
-                : 'http://localhost:3001/api/questions/addQuestion';            console.log(`Submitting to ${url} with method ${editMode ? 'PUT' : 'POST'}`);
+            // Process in batches of 10 questions to avoid timeouts
+            let successCount = 0;
+            let errorCount = 0;
+            const batchSize = 10;
             
-            const response = await fetch(url, {
-                method: editMode ? 'PUT' : 'POST',
+            for (let i = 0; i < questionsToImport.length; i += batchSize) {
+                const batch = questionsToImport.slice(i, i + batchSize);
+                setImportStatus(`Importing questions ${i + 1} to ${Math.min(i + batchSize, questionsToImport.length)} of ${questionsToImport.length}...`);
+                
+                try {
+                    const response = await axios.post('http://localhost:3001/api/questions/bulkImport', 
+                        { questions: batch },
+                        { withCredentials: true }
+                    );
+                    
+                    if (response.data && response.data.inserted) {
+                        successCount += response.data.inserted;
+                        setImportStatus(`Imported ${successCount} questions so far...`);
+                    }
+                } catch (error) {
+                    console.error('Error importing batch:', error);
+                    errorCount += batch.length;
+                }
+                
+                // Small delay between batches
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+            
+            setImportStatus(`Import completed. ${successCount} questions imported successfully. ${errorCount > 0 ? `${errorCount} questions failed.` : ''}`);
+            setTimeout(() => {
+                window.location.reload(); // Refresh to show updated questions
+            }, 3000);
+        } catch (error) {
+            console.error('Error during import process:', error);
+            setError('Error during import process. Please try again.');
+        } finally {
+            setImporting(false);
+        }
+    };
+    
+    // Original file upload method (for backward compatibility)
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) {
+            return;
+        }
+        
+        setIsImporting(true);
+        setImportError(null);
+        setImportSuccess(null);
+        
+        const file = e.target.files[0];
+        const formData = new FormData();
+        formData.append('excelFile', file);
+        
+        try {
+            const response = await fetch('http://localhost:3001/api/questions/bulk-import', {
+                method: 'POST',
                 credentials: 'include',
-                body: formDataToSend
+                body: formData
             });
             
             const data = await response.json();
             
             if (response.ok) {
-                console.log('Question saved successfully:', data);
-                fetchQuestions();
-                resetForm();
+                setImportSuccess(`Successfully imported ${data.imported} questions.`);
+                // Refresh the question manager to show new questions
+                window.location.reload();
             } else {
-                console.error('Server error response:', data);
-                setError(data.message || 'Failed to save question');
-            }        } catch (err) {
-            console.error('Error saving question:', err);
-            setError('Failed to save question');
-        }
-    };
-
-    const handleEdit = (question: Question) => {
-        setFormData({
-            provinceName: question.provinceName,
-            question: question.question,
-            options: question.options,
-            correctAnswer: question.correctAnswer
-        });
-        setSelectedQuestionId(question._id || '');
-        setEditMode(true);
-        
-        // Clear any previously selected file when editing
-        setSelectedFile(null);
-        
-        // Scroll to the top of the form for better UX
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const handleDelete = async (id: string) => {
-        if (!window.confirm('Are you sure you want to delete this question?')) return;
-
-        try {            const response = await fetch(`http://localhost:3001/api/questions/deleteQuestion/${id}`, {
-                method: 'DELETE',
-                credentials: 'include'
-            });
-
-            if (response.ok) {
-                fetchQuestions();
+                setImportError(data.message || 'Failed to import questions');
             }
         } catch (err) {
-            console.error('Error deleting question:', err);
+            setImportError('Network error. Please try again.');
+            console.error('Import error:', err);
+        } finally {
+            setIsImporting(false);
+            // Clear the file input
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
         }
     };
-
-    const resetForm = () => {
-        setFormData({
-            provinceName: '',
-            question: '',
-            options: ['', '', '', ''],
-            correctAnswer: 0
-        });
-        setSelectedFile(null);
-        setEditMode(false);
-        setSelectedQuestionId('');
-        setError('');
-    };
-
+    
     if (!isAdmin) {
-        return <div>Access denied</div>;
-    }    return (
-        <div className="min-h-screen bg-cyan-500 p-8">
-            <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-lg p-6">
-                {/* Header */}                <div className="mb-8 flex justify-between items-center">                    <h2 className="text-2xl font-bold">
-                        {editMode ? 'Edit Question' : 'Add New Question'}
-                    </h2>
-                    <select
-                        name="provinceName"
-                        id="provinceName"
-                        className="p-2 border rounded-lg"
-                        onChange={(e) => {
-                            const province = provinces.find(p => p.name === e.target.value);
-                            if (province) {
-                                setFormData(prev => ({ ...prev, provinceName: province.name }));
-                            }
-                        }}
-                        value={formData.provinceName}
-                    >
-                        <option value="">Select Province</option>
-                        {provinces
-                            .sort((a, b) => a.name.localeCompare(b.name, 'vi-VN'))
-                            .map(province => (
-                                <option key={province.id} value={province.name}>
-                                    {province.name}
-                                </option>
-                            ))
-                        }
-                    </select>
+        return <div className="flex items-center justify-center h-screen">Access denied</div>;
+    }
+
+    return (
+        <div className="flex flex-col min-h-screen">
+            <div className="text-white shadow-md bg-cyan-500">
+                <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
+                    <div className="flex justify-center">
+                        <button 
+                            onClick={() => setActiveTab('manage')}
+                            className={`py-4 px-6 font-medium ${activeTab === 'manage' ? 'border-b-4 border-white' : 'opacity-80'}`}
+                        >
+                            Manage Questions
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('import')}
+                            className={`py-4 px-6 font-medium ${activeTab === 'import' ? 'border-b-4 border-white' : 'opacity-80'}`}
+                        >
+                            Import from Excel
+                        </button>
+                    </div>
                 </div>
-
-                {error && (
-                    <div className="mb-4 text-red-500">{error}</div>
-                )}
-
-                {/* Question Form */}
-                <form onSubmit={handleSubmit} className="space-y-4">                    {/* Province Name is selected from the dropdown above, so this field is hidden */}
-                    <div className="hidden">
-                        <label className="block mb-2">Province Name:</label>
-                        <input
-                            type="text"
-                            name="provinceName"
-                            value={formData.provinceName}
-                            readOnly
-                            className="w-full p-2 border rounded bg-gray-100"
-                        />
-                    </div>
-
-                    {/* Question Input */}
+            </div>
+            
+            <div className="flex-grow p-4 bg-cyan-500 md:p-8">
+                {activeTab === 'manage' && (
                     <div>
-                        <label className="block mb-2">Question:</label>
-                        <input
-                            type="text"
-                            name="question"
-                            value={formData.question}
-                            onChange={handleInputChange}
-                            className="w-full p-2 border rounded"
-                            required
-                        />
-                    </div>
-
-                    {/* Options Input */}
-                    <div>
-                        <label className="block mb-2">Options:</label>
-                        {formData.options.map((option, index) => (
-                            <div key={index} className="mb-2">
-                                <div className="flex items-center gap-2">
-                                    <span className="inline-block w-6 h-6 text-center leading-6 rounded-full bg-gray-100">
-                                        {String.fromCharCode(65 + index)}
-                                    </span>
-                                    <input
-                                        type="text"
-                                        value={option}
-                                        onChange={(e) => handleOptionChange(index, e.target.value)}
-                                        className="flex-1 p-2 border rounded"
-                                        placeholder={`Option ${index + 1}`}
-                                        required
-                                    />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Correct Answer Input */}
-                    <div>
-                        <label className="block mb-2">Correct Answer:</label>
-                        <div className="flex gap-4">
-                            {formData.options.map((_, index) => (
-                                <button
-                                    key={index}
-                                    type="button"
-                                    onClick={() => setFormData(prev => ({ ...prev, correctAnswer: index }))}
-                                    className={`flex-1 p-2 rounded-lg border-2 transition-colors ${
-                                        index === formData.correctAnswer
-                                            ? 'border-green-500 bg-green-50 text-green-700'
-                                            : 'border-gray-300 hover:border-gray-400'
-                                    }`}
-                                >
-                                    Option {String.fromCharCode(65 + index)}
-                                </button>
-                            ))}
+                        <div className="px-4 mx-auto max-w-7xl sm:px-6 md:px-8">
+                            <h1 className="mb-6 text-3xl font-bold text-white">Question Management</h1>
+                        </div>
+                        <div className="px-4 mx-auto max-w-7xl sm:px-6 md:px-8">
+                            <QuestionManager />
                         </div>
                     </div>
-
-                    {/* Image Input */}
-                    <div>
-                        <label className="block mb-2">Image:</label>
-                        <input
-                            type="file"
-                            onChange={handleFileChange}
-                            className="w-full p-2"
-                            accept="image/*"
-                        />
-                    </div>
-
-                    {/* Form Buttons */}
-                    <div className="flex space-x-4">
-                        <button
-                            type="submit"
-                            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
-                        >
-                            {editMode ? 'Update Question' : 'Add Question'}
-                        </button>
-                        {editMode && (
-                            <button
-                                type="button"
-                                onClick={resetForm}
-                                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors"
-                            >
-                                Cancel Edit
-                            </button>
-                        )}
-                    </div>
-                </form>
-
-                {/* Questions List */}                <div className="mt-8">
-                    <h3 className="text-xl font-bold mb-4">Questions by Province</h3>
-                    <div className="space-y-6">
-                        {Array.from(new Set(questions.map(q => q.provinceName)))
-                            .sort((a, b) => a.localeCompare(b, 'vi-VN'))
-                            .map(provinceName => (
-                                <div key={provinceName} className="border rounded-lg p-4">
-                                    <h4 className="text-lg font-semibold mb-3 bg-orange-100 p-2 rounded">
-                                        Province: {provinceName}
-                                    </h4>
-                                    <div className="space-y-4">
-                                        {questions
-                                            .filter(q => q.provinceName === provinceName)
-                                            .map((question) => (
-                                                <div key={question._id} className="border p-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                                                    <div className="flex justify-between">
-                                                        <div className="flex-grow">
-                                                            <h4 className="font-bold text-lg mb-2">{question.question}</h4>
-                                                            <div className="space-y-2 ml-4">
-                                                                {question.options.map((option, index) => (
-                                                                    <p
-                                                                        key={index}
-                                                                        className={`${
-                                                                            index === question.correctAnswer ? 'text-green-600 font-medium' : 'text-gray-600'
-                                                                        } flex items-center gap-2`}
-                                                                    >
-                                                                        <span className={`inline-block w-6 h-6 text-center leading-6 rounded-full 
-                                                                            ${index === question.correctAnswer ? 'bg-green-100' : 'bg-gray-100'}`}
-                                                                        >
-                                                                            {String.fromCharCode(65 + index)}
-                                                                        </span>
-                                                                        {option}
-                                                                    </p>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-
-                                                        {question.image && (
-                                                            <div className="ml-4 flex-shrink-0">
-                                                                <img
-                                                                    src={`http://localhost:3001${question.image}`}
-                                                                    alt="Question visual"
-                                                                    className="w-32 h-32 object-cover rounded-lg"
-                                                                />
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="mt-4 flex space-x-2">
-                                                        <button
-                                                            onClick={() => handleEdit(question)}
-                                                            className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors flex items-center gap-2"
-                                                        >
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                            </svg>
-                                                            Edit
-                                                        </button>
-                                                        <button
-                                                            onClick={() => question._id && handleDelete(question._id)}
-                                                            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
-                                                        >
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                            </svg>
-                                                            Delete
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
+                )}
+                
+                {activeTab === 'import' && (
+                    <div className="max-w-6xl p-4 mx-auto bg-white rounded-lg shadow-lg md:p-6">
+                        <h1 className="mb-6 text-2xl font-bold">Import Questions from Excel</h1>
+                        
+                        <div className="p-4 mb-6 border-l-4 border-yellow-400 bg-yellow-50">
+                            <p className="font-medium">Instructions:</p>
+                            <ul className="ml-4 text-sm list-disc list-inside">
+                                <li>Your Excel file should have headers in the first row</li>
+                                <li>Column A: Question number</li>
+                                <li>Column B: Question text</li>
+                                <li>Column C-F: Option A, B, C, D</li>
+                                <li>Column G: Correct answer (A, B, C or D)</li>
+                                <li>Column H: Image URL (optional)</li>
+                                <li>Province names should be in a separate row with text only in column A</li>
+                            </ul>
+                        </div>
+                        
+                        <div className="mb-6">
+                            <label className="block mb-2 font-medium">Select Excel File:</label>
+                            <input
+                                type="file"
+                                onChange={handleFileChange}
+                                className="w-full p-2 border rounded"   
+                                accept=".xlsx,.xls"
+                                disabled={importing}
+                            />
+                        </div>
+                        
+                        {questions.length > 0 && (
+                            <>
+                                <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2">
+                                    <div>
+                                        <label className="block mb-2 font-medium">Import Options:</label>
+                                        <div className="space-y-2">
+                                            <label className="flex items-center">
+                                                <input
+                                                    type="radio"
+                                                    name="wipeOption"
+                                                    value="keep"
+                                                    checked={wipeOption === 'keep'}
+                                                    onChange={() => setWipeOption('keep')}
+                                                    className="mr-2"
+                                                />
+                                                Keep existing questions
+                                            </label>
+                                            <label className="flex items-center">
+                                                <input
+                                                    type="radio"
+                                                    name="wipeOption"
+                                                    value="wipe"
+                                                    checked={wipeOption === 'wipe'}
+                                                    onChange={() => setWipeOption('wipe')}
+                                                    className="mr-2"
+                                                />
+                                                Wipe all existing questions
+                                            </label>
+                                            <label className="flex items-center">
+                                                <input
+                                                    type="radio"
+                                                    name="wipeOption"
+                                                    value="replace"
+                                                    checked={wipeOption === 'replace'}
+                                                    onChange={() => setWipeOption('replace')}
+                                                    className="mr-2"
+                                                />
+                                                Replace questions for selected province
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block mb-2 font-medium">
+                                            Filter by Province:
+                                            {wipeOption === 'replace' && <span className="ml-1 text-red-500">*</span>}
+                                        </label>
+                                        <select
+                                            value={provinceFilter}
+                                            onChange={(e) => setProvinceFilter(e.target.value)}
+                                            className="w-full p-2 border rounded"
+                                            disabled={importing}
+                                        >
+                                            <option value="">All Provinces ({questions.length} questions)</option>
+                                            {provinces.map(province => {
+                                                const count = questions.filter(q => q.provinceName === province).length;
+                                                return (
+                                                    <option key={province} value={province}>
+                                                        {province} ({count} questions)
+                                                    </option>
+                                                );
+                                            })}
+                                        </select>
+                                        {wipeOption === 'replace' && !provinceFilter && (
+                                            <p className="mt-1 text-sm text-red-500">
+                                                Please select a province when using "Replace" option
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
-                            ))}
+                                
+                                <div className="p-3 mb-4 text-green-700 bg-green-100 rounded">
+                                    <p className="font-medium">{questions.length} questions parsed from Excel:</p>
+                                    <div className="mt-2 text-sm">
+                                        {provinces.map(province => (
+                                            <div key={province} className="mb-1">
+                                                {province}: {questions.filter(q => q.provinceName === province).length} questions
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                        
+                        {error && (
+                            <div className="p-3 mb-4 text-red-700 bg-red-100 rounded">{error}</div>
+                        )}
+                        
+                        {importStatus && (
+                            <div className="p-3 mb-4 text-blue-700 bg-blue-100 rounded">{importStatus}</div>
+                        )}
+                        
+                        {preview.length > 0 && (
+                            <div className="mb-6">
+                                <h2 className="mb-2 text-xl font-semibold">Preview:</h2>
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full bg-white border">
+                                        <thead>
+                                            <tr className="bg-gray-100">
+                                                {preview[0].map((cell: any, i: number) => (
+                                                    <th key={i} className="px-2 py-1 text-xs text-left border md:text-sm">
+                                                        {cell || (i === 0 ? '#' : 
+                                                            i === 1 ? 'Question' : 
+                                                            i === 2 ? 'A' :
+                                                            i === 3 ? 'B' :
+                                                            i === 4 ? 'C' :
+                                                            i === 5 ? 'D' :
+                                                            i === 6 ? 'Key' : 'URL')}
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {preview.slice(1, 12).map((row: any, i: number) => (
+                                                <tr key={i} className={i % 2 === 0 ? 'bg-gray-50' : ''}>
+                                                    {row.map((cell: any, j: number) => (
+                                                        <td key={j} className="px-2 py-1 border truncate max-w-[150px] text-xs md:text-sm">
+                                                            {cell}
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                        
+                        <div className="flex justify-between">
+                            <button
+                                onClick={handleImport}
+                                className="px-6 py-2 text-white transition-colors bg-blue-500 rounded hover:bg-blue-600 disabled:opacity-50"
+                                disabled={importing || 
+                                        questions.length === 0 || 
+                                        (wipeOption === 'replace' && !provinceFilter)}
+                            >
+                                {importing ? 'Importing...' : 'Import Questions'}
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );
