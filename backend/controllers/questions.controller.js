@@ -29,21 +29,31 @@ const getQuestionByProvince = async (req, res) => {
         // Format province name to handle URL-encoded strings
         const formattedProvinceName = decodeURIComponent(provinceName.trim());
         
-        // Get 10 random questions for the province
+        // Use case-insensitive regex to find the province
         const questions = await Question.aggregate([
-            { $match: { provinceName: formattedProvinceName } },
+            { 
+                $match: { 
+                    provinceName: { 
+                        $regex: new RegExp('^' + formattedProvinceName + '$', 'i') 
+                    } 
+                }
+            },
             { $sample: { size: 10 } }
         ]);
         
         if (questions.length === 0) {
             return res.status(404).json({ 
-                message: "No questions found for this province",
+                message: `No questions found for province "${formattedProvinceName}"`,
                 provinceName: formattedProvinceName
             });
         }
 
-        // Send back total available questions along with the random selection
-        const totalQuestions = await Question.countDocuments({ provinceName: formattedProvinceName });
+        // Get total questions for this province using the same case-insensitive match
+        const totalQuestions = await Question.countDocuments({ 
+            provinceName: { 
+                $regex: new RegExp('^' + formattedProvinceName + '$', 'i') 
+            }
+        });
         
         res.json({
             questions,
@@ -208,11 +218,123 @@ const deleteQuestion = async (req, res) => {
         res.status(500).json({ message: "Error deleting question", error: error.message });
     }
 };
+const bulkImport = async (req, res) => {
+    try {
+        const { questions } = req.body;
+        
+        if (!Array.isArray(questions) || questions.length === 0) {
+            return res.status(400).json({ 
+                message: "Invalid input: questions must be a non-empty array"
+            });
+        }
+
+        // Validate all questions before inserting
+        const validQuestions = [];
+        const invalidQuestions = [];
+        
+        for (const q of questions) {
+            // Basic validation checks
+            if (!q.provinceName || !q.question || 
+                !Array.isArray(q.options) || q.options.length !== 4 ||
+                typeof q.correctAnswer !== 'number' || 
+                q.correctAnswer < 0 || q.correctAnswer > 3) {
+                invalidQuestions.push(q);
+                continue;
+            }
+            
+            // All options must have text
+            if (q.options.some(opt => {
+                // Check if option exists and is a valid string
+                if (!opt && opt !== 0 && opt !== '') return true;
+                
+                // Convert non-string values to strings
+                const optStr = String(opt);
+                return optStr.trim() === '';
+            })) {
+                invalidQuestions.push(q);
+                continue;
+            }
+            
+            validQuestions.push({
+                provinceName: q.provinceName,
+                question: q.question,
+                options: q.options,
+                correctAnswer: q.correctAnswer,
+                ...(q.image ? { image: q.image } : {})
+            });
+        }
+
+        if (validQuestions.length === 0) {
+            return res.status(400).json({ 
+                message: "No valid questions to import",
+                invalidCount: invalidQuestions.length
+            });
+        }
+
+        // Insert validated questions
+        const result = await Question.insertMany(validQuestions);
+        
+        res.status(201).json({ 
+            message: "Questions imported successfully", 
+            inserted: result.length,
+            total: questions.length,
+            invalid: invalidQuestions.length
+        });
+    } catch (error) {
+        console.error('Error bulk importing questions:', error);
+        res.status(500).json({ 
+            message: "Error importing questions", 
+            error: error.message 
+        });
+    }
+};
+
+// Wipe all questions
+const wipeAllQuestions = async (req, res) => {
+    try {
+        const result = await Question.deleteMany({});
+        res.status(200).json({
+            message: `${result.deletedCount} questions deleted successfully`
+        });
+    } catch (error) {
+        console.error('Error wiping questions:', error);
+        res.status(500).json({
+            message: "Error wiping questions",
+            error: error.message
+        });
+    }
+};
+
+// Wipe questions for specific province
+const wipeProvinceQuestions = async (req, res) => {
+    try {
+        const { provinceName } = req.params;
+        if (!provinceName) {
+            return res.status(400).json({
+                message: "Province name is required"
+            });
+        }
+        
+        const result = await Question.deleteMany({ provinceName });
+        res.status(200).json({
+            message: `${result.deletedCount} questions deleted for province "${provinceName}"`
+        });
+    } catch (error) {
+        console.error('Error wiping province questions:', error);
+        res.status(500).json({
+            message: "Error wiping province questions",
+            error: error.message
+        });
+    }
+};
 
 module.exports = {
     getAllQuestions,
     getQuestionByProvince,
     addQuestion,
     updateQuestion,
-    deleteQuestion
+    deleteQuestion,
+    bulkImport,
+    wipeAllQuestions,
+    wipeProvinceQuestions
 };

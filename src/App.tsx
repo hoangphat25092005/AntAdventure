@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import TalkingAnt from './components/TalkingAnt';
@@ -18,8 +19,13 @@ import ProvinceManagement from './pages/ProvinceManagement';
 import CopperDrumImage from './assets/CopperDrum.png';
 
 const App: React.FC = () => {
+  useEffect(() => {
+    console.log('Google Client ID:', process.env.REACT_APP_GOOGLE_CLIENT_ID);
+  }, []);
+
   return (
-    <Router>      <div className="h-screen flex flex-col fixed w-full">
+    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID || ''}>
+      <Router>      <div className="h-screen flex flex-col fixed w-full">
         <Header className="z-20" />
         <main className="flex-1 overflow-y-auto bg-transparent">
           <div className="relative z-10">
@@ -37,9 +43,9 @@ const App: React.FC = () => {
              </Routes>          </div>
         </main>
         <TalkingAnt />
-        <Footer />
-      </div>
+        <Footer />      </div>
     </Router>
+    </GoogleOAuthProvider>
   );
 };
 

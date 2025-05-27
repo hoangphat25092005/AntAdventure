@@ -5,6 +5,7 @@ const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const mongoose = require("mongoose");
 const path = require("path");
+const passport = require('./config/passport');
 const userRoutes = require("./routing/user.routing");
 const feedbackRoutes = require("./routing/feedback.routing");
 const questionRoutes = require("./routing/questions.routing");
@@ -38,7 +39,11 @@ app.use(session({
         sameSite: 'lax',
         path: '/' // Ensure cookie is available across all paths
     }
-}));
+})); 
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Configure middleware
 app.use(express.json());

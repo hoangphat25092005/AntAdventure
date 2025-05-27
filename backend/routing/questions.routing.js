@@ -13,4 +13,11 @@ router.post('/addQuestion', isAdmin, upload.single('image'), questionController.
 router.put('/updateQuestion/:id', isAdmin, upload.single('image'), questionController.updateQuestion);
 router.delete('/deleteQuestion/:id', isAdmin, questionController.deleteQuestion);
 
+router.post('/bulkImport', isAdmin, questionController.bulkImport);
+
+// Wipe all questions
+router.delete('/wipe', isAdmin, questionController.wipeAllQuestions);
+
+// Wipe questions for specific province
+router.delete('/wipe/:provinceName', isAdmin, questionController.wipeProvinceQuestions);
 module.exports = router;

@@ -110,14 +110,16 @@ const QuestionManager: React.FC = () => {
                 setError('Invalid province selected');
                 return;
             }
-            
-            formDataToSend.append('provinceName', selectedProvince.name);
+              formDataToSend.append('provinceName', selectedProvince.name);
             formDataToSend.append('question', formData.question.trim());
             formDataToSend.append('options', JSON.stringify(formData.options.map(opt => opt.trim())));
             formDataToSend.append('correctAnswer', formData.correctAnswer.toString());
             
             if (selectedFile) {
                 formDataToSend.append('image', selectedFile);
+            } else if (editMode) {
+                // If editing and no new file selected, tell the server to keep the existing image
+                formDataToSend.append('keepExistingImage', 'true');
             }            // Log form data contents for debugging
             console.log('Form data preview:', {
                 provinceName: formData.provinceName,
@@ -128,18 +130,21 @@ const QuestionManager: React.FC = () => {
             });
             const url = editMode
                 ? `http://localhost:3001/api/questions/updateQuestion/${selectedQuestionId}`
-                : 'http://localhost:3001/api/questions/addQuestion';
-
+                : 'http://localhost:3001/api/questions/addQuestion';            console.log(`Submitting to ${url} with method ${editMode ? 'PUT' : 'POST'}`);
+            
             const response = await fetch(url, {
                 method: editMode ? 'PUT' : 'POST',
                 credentials: 'include',
                 body: formDataToSend
-            });            if (response.ok) {
-                console.log('Question saved successfully');
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                console.log('Question saved successfully:', data);
                 fetchQuestions();
                 resetForm();
             } else {
-                const data = await response.json();
                 console.error('Server error response:', data);
                 setError(data.message || 'Failed to save question');
             }
@@ -147,9 +152,7 @@ const QuestionManager: React.FC = () => {
             console.error('Error saving question:', err);
             setError('Failed to save question');
         }
-    };
-
-    const handleEdit = (question: Question) => {
+    };    const handleEdit = (question: Question) => {
         setFormData({
             provinceName: question.provinceName,
             question: question.question,
@@ -158,6 +161,8 @@ const QuestionManager: React.FC = () => {
         });
         setSelectedQuestionId(question._id || '');
         setEditMode(true);
+        // Clear any previously selected file when editing
+        setSelectedFile(null);
     };
 
     const handleDelete = async (id: string) => {
@@ -194,12 +199,12 @@ const QuestionManager: React.FC = () => {
     }    return (
         <div className="min-h-screen bg-cyan-500 p-8">
             <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-lg p-6">
-                {/* Header */}
-                <div className="mb-8 flex justify-between items-center">                    <h2 className="text-2xl font-bold">
+                {/* Header */}                <div className="mb-8 flex justify-between items-center">                    <h2 className="text-2xl font-bold">
                         {editMode ? 'Edit Question' : 'Add New Question'}
                     </h2>
                     <select
-                        name="filterProvince"
+                        name="provinceName"
+                        id="provinceName"
                         className="p-2 border rounded-lg"
                         onChange={(e) => {
                             const province = provinces.find(p => p.name === e.target.value);
@@ -226,17 +231,15 @@ const QuestionManager: React.FC = () => {
                 )}
 
                 {/* Question Form */}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Province Name Input */}
-                    <div>
+                <form onSubmit={handleSubmit} className="space-y-4">                    {/* Province Name is selected from the dropdown above, so this field is hidden */}
+                    <div className="hidden">
                         <label className="block mb-2">Province Name:</label>
                         <input
                             type="text"
                             name="provinceName"
                             value={formData.provinceName}
-                            onChange={handleInputChange}
-                            className="w-full p-2 border rounded"
-                            required
+                            readOnly
+                            className="w-full p-2 border rounded bg-gray-100"
                         />
                     </div>
 
