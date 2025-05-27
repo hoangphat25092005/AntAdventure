@@ -17,7 +17,7 @@ import AdminLogin from './pages/AdminLogin';
 import AdminRegister from './pages/AdminRegister';
 import ProvinceManagement from './pages/ProvinceManagement';
 import CopperDrumImage from './assets/CopperDrum.png';
-
+import QuestionImport from './pages/Import';
 const App: React.FC = () => {
   useEffect(() => {
     console.log('Google Client ID:', process.env.REACT_APP_GOOGLE_CLIENT_ID);
@@ -40,7 +40,9 @@ const App: React.FC = () => {
               <Route path="/manage-provinces" element={<div className="bg-opacity-80"><ProvinceManagement /></div>} />
               <Route path="/admin-login" element={<div className="bg-opacity-80"><AdminLogin /></div>} />
               <Route path="/admin-register" element={<div className="bg-opacity-80"><AdminRegister /></div>} />
-             </Routes>          </div>
+              <Route path="/import" element={<QuestionImport />} />
+             </Routes>
+          </div>
         </main>
         <TalkingAnt />
         <Footer />      </div>

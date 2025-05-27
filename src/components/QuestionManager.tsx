@@ -147,12 +147,13 @@ const QuestionManager: React.FC = () => {
             } else {
                 console.error('Server error response:', data);
                 setError(data.message || 'Failed to save question');
-            }
-        } catch (err) {
+            }        } catch (err) {
             console.error('Error saving question:', err);
             setError('Failed to save question');
         }
-    };    const handleEdit = (question: Question) => {
+    };
+
+    const handleEdit = (question: Question) => {
         setFormData({
             provinceName: question.provinceName,
             question: question.question,
@@ -161,8 +162,12 @@ const QuestionManager: React.FC = () => {
         });
         setSelectedQuestionId(question._id || '');
         setEditMode(true);
+        
         // Clear any previously selected file when editing
         setSelectedFile(null);
+        
+        // Scroll to the top of the form for better UX
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleDelete = async (id: string) => {

@@ -1,0 +1,405 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
+import axios from 'axios';
+
+const QuestionImport: React.FC = () => {
+  const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [importStatus, setImportStatus] = useState<string>('');
+  const [error, setError] = useState('');
+  const [provinceFilter, setProvinceFilter] = useState<string>('');
+  const [provinces, setProvinces] = useState<string[]>([]);
+  const [wipeOption, setWipeOption] = useState<'keep'|'wipe'|'replace'>('replace');
+
+  useEffect(() => {
+    checkAdminStatus();
+  }, []);
+
+  const checkAdminStatus = async () => {
+    try {
+      const response = await axios.get('/api/users/checkAdmin', { 
+        withCredentials: true 
+      });
+      setIsAdmin(true);
+    } catch (err) {
+      console.error('Admin check failed:', err);
+      navigate('/login');
+    }
+  };
+
+  // Function to convert letter key (A, B, C, D) to numeric index (0, 1, 2, 3)
+  const keyToIndex = (key: string) => {
+    switch (key) {
+      case 'A': return 0;
+      case 'B': return 1;
+      case 'C': return 2;
+      case 'D': return 3;
+      default: return 0; // Default to first option if key is invalid
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError('');
+    setPreview([]);
+    setQuestions([]);
+    setProvinces([]);
+    setImportStatus('');
+    
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+      processExcel(e.target.files[0]);
+    }
+  };
+
+  const processExcel = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        if (!data) {
+          setError('Failed to read file data');
+          return;
+        }
+        
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+        
+        // Take first rows for preview
+        setPreview(json.slice(0, 15));
+        
+        // Parse questions
+        const parsedQuestions = parseQuestions(json);
+        setQuestions(parsedQuestions);
+        
+        // Extract unique province names
+        const uniqueProvinces = Array.from(new Set(parsedQuestions.map(q => q.provinceName))).sort();
+        setProvinces(uniqueProvinces);
+        
+      } catch (error) {
+        console.error('Error reading Excel file:', error);
+        setError('Error reading Excel file. Please check the format.');
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const parseQuestions = (data: any[]) => {
+    const questions = [];
+    let currentProvince = null;
+    let isHeaderRow = true;
+    
+    for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
+      const row = data[rowIndex];
+      
+      // Skip empty rows
+     if (!row.some((cell: string) => cell !== '')) {
+      continue;
+    }   
+      
+      // Check if this is the header row with column names
+      if (isHeaderRow) {
+        isHeaderRow = false;
+        continue; // Skip the header row with column identifiers
+      }
+      
+      // Check if this is a province row (should have text in column B and empty in columns A, C-G)
+      if (row[0] === '' && row[1] !== '' && !row[2] && !row[3] && !row[4] && !row[5]) {
+        currentProvince = row[1].trim();
+        continue;
+      }
+      
+      // If we have a province set and this is a question row (has a number in first column)
+      if (currentProvince && row[0] && !isNaN(parseInt(row[0]))) {
+        // Question text is in column 1
+        const questionText = row[1];
+        if (!questionText) continue; // Skip if no question text
+        
+        // Options A, B, C, D are in columns 2-5
+        const options = [
+          row[2] || '', // Option A
+          row[3] || '', // Option B
+          row[4] || '', // Option C
+          row[5] || ''  // Option D
+        ];
+        
+        // Get the correct answer key from column 6
+        const correctAnswerKey = row[6] || 'A';
+        const correctAnswerIndex = keyToIndex(correctAnswerKey);
+        
+        // Image URL is in column 7
+        const imageUrl = row[7] ? row[7].toString().trim() : '';
+        
+        questions.push({
+          provinceName: currentProvince,
+          question: questionText,
+          options: options,
+          correctAnswer: correctAnswerIndex,
+          ...(imageUrl && imageUrl.startsWith('http') ? { image: imageUrl } : {})
+        });
+      }
+    }
+    
+    return questions;
+  };
+
+  const handleImport = async () => {
+    if (questions.length === 0) {
+      setError('No valid questions to import');
+      return;
+    }
+    
+    setImporting(true);
+    setImportStatus('Starting import...');
+    setError('');
+    
+    try {
+      const questionsToImport = provinceFilter ? 
+        questions.filter(q => q.provinceName === provinceFilter) : 
+        questions;
+      
+      if (questionsToImport.length === 0) {
+        setError(`No questions found for province "${provinceFilter}"`);
+        setImporting(false);
+        return;
+      }
+      
+      // First, handle wiping if needed
+      if (wipeOption === 'wipe') {
+        setImportStatus('Wiping all existing questions...');
+        await axios.delete('/api/questions/wipe', { withCredentials: true });
+      } else if (wipeOption === 'replace' && provinceFilter) {
+        setImportStatus(`Wiping existing questions for province "${provinceFilter}"...`);
+        await axios.delete(`/api/questions/wipe/${encodeURIComponent(provinceFilter)}`, 
+          { withCredentials: true });
+      }
+      
+      // Process in batches of 10 questions to avoid timeouts
+      let successCount = 0;
+      let errorCount = 0;
+      const batchSize = 10;
+      
+      for (let i = 0; i < questionsToImport.length; i += batchSize) {
+        const batch = questionsToImport.slice(i, i + batchSize);
+        setImportStatus(`Importing questions ${i + 1} to ${Math.min(i + batchSize, questionsToImport.length)} of ${questionsToImport.length}...`);
+        
+        try {
+          const response = await axios.post('/api/questions/bulkImport', 
+            { questions: batch },
+            { withCredentials: true }
+          );
+          
+          if (response.data && response.data.inserted) {
+            successCount += response.data.inserted;
+            setImportStatus(`Imported ${successCount} questions so far...`);
+          }
+        } catch (error) {
+          console.error('Error importing batch:', error);
+          errorCount += batch.length;
+        }
+        
+        // Small delay between batches
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+      
+      setImportStatus(`Import completed. ${successCount} questions imported successfully. ${errorCount > 0 ? `${errorCount} questions failed.` : ''}`);
+    } catch (error) {
+      console.error('Error during import process:', error);
+      setError('Error during import process. Please try again.');
+    } finally {
+      setImporting(false);
+    }
+  };
+  
+  if (!isAdmin) {
+    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-cyan-500 p-4 md:p-8">
+      <div className="max-w-6xl mx-auto bg-white rounded-lg shadow-lg p-4 md:p-6">
+        <h1 className="text-2xl font-bold mb-6">Import Questions from Excel</h1>
+        
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+          <p className="font-medium">Instructions:</p>
+          <ul className="list-disc list-inside ml-4 text-sm">
+            <li>Your Excel file should have headers in the first row</li>
+            <li>Column A: Question number</li>
+            <li>Column B: Question text</li>
+            <li>Column C-F: Option A, B, C, D</li>
+            <li>Column G: Correct answer (A, B, C or D)</li>
+            <li>Column H: Image URL (optional)</li>
+            <li>Province names should be in a separate row with text only in column B</li>
+          </ul>
+        </div>
+        
+        <div className="mb-6">
+          <label className="block mb-2 font-medium">Select Excel File:</label>
+          <input
+            type="file"
+            onChange={handleFileChange}
+            className="w-full p-2 border rounded"
+            accept=".xlsx,.xls"
+            disabled={importing}
+          />
+        </div>
+        
+        {questions.length > 0 && (
+          <>
+            <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block mb-2 font-medium">Import Options:</label>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="wipeOption"
+                      value="keep"
+                      checked={wipeOption === 'keep'}
+                      onChange={() => setWipeOption('keep')}
+                      className="mr-2"
+                    />
+                    Keep existing questions
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="wipeOption"
+                      value="wipe"
+                      checked={wipeOption === 'wipe'}
+                      onChange={() => setWipeOption('wipe')}
+                      className="mr-2"
+                    />
+                    Wipe all existing questions
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="wipeOption"
+                      value="replace"
+                      checked={wipeOption === 'replace'}
+                      onChange={() => setWipeOption('replace')}
+                      className="mr-2"
+                    />
+                    Replace questions for selected province
+                  </label>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block mb-2 font-medium">
+                  Filter by Province:
+                  {wipeOption === 'replace' && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                <select
+                  value={provinceFilter}
+                  onChange={(e) => setProvinceFilter(e.target.value)}
+                  className="w-full p-2 border rounded"
+                  disabled={importing}
+                >
+                  <option value="">All Provinces ({questions.length} questions)</option>
+                  {provinces.map(province => {
+                    const count = questions.filter(q => q.provinceName === province).length;
+                    return (
+                      <option key={province} value={province}>
+                        {province} ({count} questions)
+                      </option>
+                    );
+                  })}
+                </select>
+                {wipeOption === 'replace' && !provinceFilter && (
+                  <p className="mt-1 text-sm text-red-500">
+                    Please select a province when using "Replace" option
+                  </p>
+                )}
+              </div>
+            </div>
+            
+            <div className="mb-4 p-3 bg-green-100 text-green-700 rounded">
+              <p className="font-medium">{questions.length} questions parsed from Excel:</p>
+              <div className="mt-2 text-sm">
+                {provinces.map(province => (
+                  <div key={province} className="mb-1">
+                    {province}: {questions.filter(q => q.provinceName === province).length} questions
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+        
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">{error}</div>
+        )}
+        
+        {importStatus && (
+          <div className="mb-4 p-3 bg-blue-100 text-blue-700 rounded">{importStatus}</div>
+        )}
+        
+        {preview.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">Preview:</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white border">
+                <thead>
+                  <tr className="bg-gray-100">
+                    {preview[0].map((cell: any, i: number) => (
+                      <th key={i} className="px-2 py-1 border text-left text-xs md:text-sm">
+                        {cell || (i === 0 ? '#' : 
+                          i === 1 ? 'Question' : 
+                          i === 2 ? 'A' :
+                          i === 3 ? 'B' :
+                          i === 4 ? 'C' :
+                          i === 5 ? 'D' :
+                          i === 6 ? 'Key' : 'URL')}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {preview.slice(1, 12).map((row: any, i: number) => (
+                    <tr key={i} className={i % 2 === 0 ? 'bg-gray-50' : ''}>
+                      {row.map((cell: any, j: number) => (
+                        <td key={j} className="px-2 py-1 border truncate max-w-[150px] text-xs md:text-sm">
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+        
+        <div className="flex justify-between">
+          <button
+            onClick={handleImport}
+            className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors disabled:opacity-50"
+            disabled={importing || 
+                    questions.length === 0 || 
+                    (wipeOption === 'replace' && !provinceFilter)}
+          >
+            {importing ? 'Importing...' : 'Import Questions'}
+          </button>
+          
+          <button
+            onClick={() => navigate('/question-management')}
+            className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 transition-colors"
+            disabled={importing}
+          >
+            Back
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default QuestionImport;

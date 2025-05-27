@@ -46,18 +46,21 @@ const ProvincePopup: React.FC<ProvincePopupProps> = ({ province, position, onClo
           
           {/* Province image */}
           <img 
-              src={(() => {
-              const imageUrl = province.imageUrl ? 
-               `http://localhost:3001${province.imageUrl.startsWith('/') ? province.imageUrl : `/${province.imageUrl}`}` : 
-              `https://via.placeholder.com/300x200?text=${encodeURIComponent(province.name)}`;
-              console.log('Trying to load image from:', imageUrl, 'Original imageUrl:', province.imageUrl);
-              return imageUrl;
-              })()}
+            src={(() => {
+              // If province has an imageUrl property from the database
+              if (province.imageUrl) {
+                // Make sure the URL is properly formed with the backend server
+                return `http://localhost:3001${province.imageUrl.startsWith('/') ? province.imageUrl : `/${province.imageUrl}`}`;
+              } 
+              // Fallback to a placeholder image with the province name
+              return `https://via.placeholder.com/300x200?text=${encodeURIComponent(province.name)}`;
+            })()}
             alt={province.name}
             className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:brightness-110"
             onError={(e) => {
+              // If the image fails to load, use a blurred placeholder
               const target = e.target as HTMLImageElement;
-              target.src = `https://picsum.photos/300/200?blur`;
+              target.src = `https://picsum.photos/300/200?blur=2&random=${province.id}`;
             }}
           />
 
