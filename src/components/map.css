@@ -38,6 +38,7 @@
   color: #333;
   font-weight: bold;
   font-size: 12px;
+  text-shadow: 2px 2px 2px white, -2px -2px 2px white, 2px -2px 2px white, -2px 2px 2px white;
   text-shadow: 1px 1px 1px #fff, -1px -1px 1px #fff, 1px -1px 1px #fff, -1px 1px 1px #fff;
   white-space: nowrap;
   pointer-events: none;

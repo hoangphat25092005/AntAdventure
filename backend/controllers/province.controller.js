@@ -98,17 +98,17 @@ const addProvince = async (req, res) => {
                     }
                 } catch (jsonError) {
                     console.warn('Could not read provinceDetails.json:', jsonError);
-                }
-
-                // Create a new province document
+                }                // Create a new province document with default values
                 province = new ProvinceDetails({
                     provinceId: effectiveProvinceId,
                     id: effectiveProvinceId,
                     name: req.body.name || initialData.name || `Province ${effectiveProvinceId}`,
-                    introduction: initialData.introduction || '',
-                    famousFor: initialData.famousFor || [],
-                    attractions: initialData.attractions || []
+                    introduction: req.body.introduction || initialData.introduction || '',
+                    famousFor: req.body.famousFor ? JSON.parse(req.body.famousFor) : (initialData.famousFor || []),
+                    attractions: req.body.attractions ? JSON.parse(req.body.attractions) : (initialData.attractions || [])
                 });
+
+                console.log('Creating new province with data:', province);
                 await province.save();
                 console.log('✨ Created new province record:', effectiveProvinceId);
             } catch (error) {
@@ -121,23 +121,29 @@ const addProvince = async (req, res) => {
         if (req.file) {
             console.log('🖼️ Processing uploaded file:', req.file);
             
-            // Update the image URL to point to the new file
-            const newImageUrl = `/images/provinces/${req.file.filename}`;
+            // Update the image URL to point to the new file            const newImageUrl = `/images/provinces/${req.file.filename}`;
+            
+            // Store the absolute URL in the database for consistency
+            const absoluteUrl = `http://localhost:3001/images/provinces/${req.file.filename}`;
             
             // If there's an existing image, try to remove it (cleanup is now handled in provinceUpload middleware)
-            if (province.imageUrl && province.imageUrl !== newImageUrl) {
+            if (province.imageUrl) {
                 try {
-                    const oldImagePath = path.join(__dirname, '../public', province.imageUrl);
-                    if (fs.existsSync(oldImagePath)) {
-                        fs.unlinkSync(oldImagePath);
-                        console.log('🗑️ Removed old image file:', oldImagePath);
+                    // Extract filename from existing URL
+                    const existingFilename = province.imageUrl.split('/').pop();
+                    if (existingFilename) {
+                        const oldImagePath = path.join(__dirname, '../public/images/provinces', existingFilename);
+                        if (fs.existsSync(oldImagePath)) {
+                            fs.unlinkSync(oldImagePath);
+                            console.log('🗑️ Removed old image file:', oldImagePath);
+                        }
                     }
                 } catch (err) {
                     console.error('❌ Error removing old image file:', err);
                 }
             }
             
-            province.imageUrl = newImageUrl;
+            province.imageUrl = absoluteUrl;
             console.log('🔄 Updated image URL to:', province.imageUrl);
         }
 

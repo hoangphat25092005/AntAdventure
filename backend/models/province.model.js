@@ -9,27 +9,29 @@ const provinceDetailsSchema = new mongoose.Schema({
     id: {
         type: String,
         required: false // Keep for backward compatibility
-    },
-    name: {
+    },    name: {
         type: String,
         required: true
     },
     introduction: {
         type: String,
-        required: true
+        required: false,
+        default: ''
     },
     imageUrl: {
         type: String,
         required: false
     },
-    famousFor: [{
-        type: String,
-        required: true
-    }],
-    attractions: [{
-        type: String,
-        required: true
-    }],
+    famousFor: {
+        type: [String],
+        required: false,
+        default: []
+    },
+    attractions: {
+        type: [String],
+        required: false,
+        default: []
+    },
     createdAt: {
         type: Date,
         default: Date.now

@@ -8,19 +8,29 @@ interface ProvincePopupProps {
   province: Province;
   position: [number, number];
   onClose?: () => void;
+  onImageUpdate?: (provinceId: string, imageUrl: string) => void;
 }
 
-const ProvincePopup: React.FC<ProvincePopupProps> = ({ province, position, onClose }) => {
+const ProvincePopup: React.FC<ProvincePopupProps> = ({ 
+  province, 
+  position, 
+  onClose,
+  onImageUpdate 
+}) => {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | undefined>(province.imageUrl);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [localImageUrl, setLocalImageUrl] = useState<string | undefined>(province.imageUrl);
 
   useEffect(() => {
     checkAdminStatus();
   }, []);
+
+  useEffect(() => {
+    // Update local image URL when province prop changes
+    setLocalImageUrl(province.imageUrl);
+  }, [province]);
 
   const checkAdminStatus = async () => {
     try {
@@ -46,13 +56,11 @@ const ProvincePopup: React.FC<ProvincePopupProps> = ({ province, position, onClo
     setUploadError(null);
     
     try {
-      // Validate file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         setUploadError('File size should not exceed 5MB');
         return;
       }
 
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         setUploadError('Only image files are allowed');
         return;
@@ -63,36 +71,88 @@ const ProvincePopup: React.FC<ProvincePopupProps> = ({ province, position, onClo
       formData.append('id', province.id);
       formData.append('name', province.name);
 
-      console.log('Preparing upload for province:', province.id);
-      console.log('File details:', {
-        name: file.name,
-        type: file.type,
-        size: `${(file.size / 1024).toFixed(2)} KB`
-      });
-
       const response = await fetch(`http://localhost:3001/api/provinces/${province.id}`, {
         method: 'PUT',
         credentials: 'include',
         body: formData,
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to upload image');
+      }
 
-      if (response.ok && data.province?.imageUrl) {
-        setImageUrl(data.province.imageUrl);
-        console.log('Image uploaded successfully:', data.province.imageUrl);
+      const data = await response.json();
+      
+      if (data.province?.imageUrl) {
+        const newImageUrl = data.province.imageUrl;
+        
+        // Construct full URL if needed
+        const fullImageUrl = newImageUrl.startsWith('http') 
+          ? newImageUrl 
+          : `http://localhost:3001${newImageUrl.startsWith('/') ? newImageUrl : `/${newImageUrl}`}`;
+        
+        // Update local state first
+        setLocalImageUrl(fullImageUrl);
+        
+        // Then update parent component state
+        if (onImageUpdate) {
+          onImageUpdate(province.id, fullImageUrl);
+        }
       } else {
-        const errorMsg = data.message || 'Unknown error';
-        console.error('Failed to upload image:', errorMsg);
-        setUploadError('Failed to upload image: ' + errorMsg);
+        throw new Error('No image URL in response');
       }
     } catch (error) {
       console.error('Error uploading image:', error);
-      setUploadError('Network error. Please try again.');
+      setUploadError(error instanceof Error ? error.message : 'Network error. Please try again.');
     } finally {
       setIsUploading(false);
-      setSelectedFile(null);
     }
+  };
+
+  const getImageUrl = () => {
+    if (!localImageUrl) {
+      return `https://via.placeholder.com/300x200?text=${encodeURIComponent(province.name)}`;
+    }
+
+    try {
+      // First try parsing the URL to validate it
+      new URL(localImageUrl);
+      return localImageUrl;
+    } catch {
+      // If URL is invalid or relative, construct full backend URL
+      const baseUrl = 'http://localhost:3001';
+      const path = localImageUrl.startsWith('/') ? localImageUrl : `/${localImageUrl}`;
+      return `${baseUrl}${path}`;
+    }
+  };
+
+  // Enhanced image error handler
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const target = e.target as HTMLImageElement;
+    const originalSrc = target.src;
+    
+    // Don't retry if we're already using a fallback
+    if (originalSrc.includes('picsum.photos') || originalSrc.includes('via.placeholder.com')) {
+      return;
+    }
+
+    // Try loading from picsum as a first fallback
+    const picsumUrl = `https://picsum.photos/300/200?blur=2&random=${province.id}`;
+    
+    // Load the fallback image first to ensure it exists
+    const img = new Image();
+    img.onerror = () => {
+      // If picsum fails, use placeholder as final fallback
+      target.src = `https://via.placeholder.com/300/200?text=${encodeURIComponent(province.name)}`;
+    };
+    img.onload = () => {
+      target.src = picsumUrl;
+    };
+    img.src = picsumUrl;
+
+    // Log the failure for debugging
+    console.error('Failed to load province image:', originalSrc);
   };
 
   return (
@@ -118,23 +178,10 @@ const ProvincePopup: React.FC<ProvincePopupProps> = ({ province, position, onClo
           
           {/* Province image */}
           <img 
-            src={(() => {
-              // If province has an imageUrl property from the database
-              if (imageUrl) {
-                return imageUrl.startsWith('http') 
-                  ? imageUrl 
-                  : `http://localhost:3001${imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`}`;
-              } 
-              // Fallback to a placeholder image with the province name
-              return `https://via.placeholder.com/300x200?text=${encodeURIComponent(province.name)}`;
-            })()}
+            src={getImageUrl()}
             alt={province.name}
             className="absolute inset-0 object-cover w-full h-full transition-all duration-700 group-hover:scale-110 group-hover:brightness-110"
-            onError={(e) => {
-              // If the image fails to load, use a blurred placeholder
-              const target = e.target as HTMLImageElement;
-              target.src = `https://picsum.photos/300/200?blur=2&random=${province.id}`;
-            }}
+            onError={handleImageError}
           />
 
           {/* Image upload input for admin users */}
@@ -156,10 +203,7 @@ const ProvincePopup: React.FC<ProvincePopupProps> = ({ province, position, onClo
                   `}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) {
-                      setSelectedFile(file);
-                      handleImageUpload(file);
-                    }
+                    if (file) handleImageUpload(file);
                   }}
                   disabled={isUploading}
                 />

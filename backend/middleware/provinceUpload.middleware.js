@@ -12,12 +12,22 @@ const storage = multer.diskStorage({
         console.log('Saving file to:', provincesDir);
         cb(null, provincesDir);
     },
-    filename: function (req, file, cb) {
-        // Use the province ID from the request params or body
-        const provinceId = req.params.id || req.body.id || req.body.provinceId;
-        if (!provinceId) {
-            return cb(new Error('Province ID is required for file upload'));
+    filename: function (req, file, cb) {        // Use the province ID from the request params only for PUT requests, 
+        // or from the body for POST requests
+        let provinceId;
+        if (req.method === 'PUT') {
+            provinceId = req.params.id;
+        } else {
+            provinceId = req.body.id || req.body.provinceId;
         }
+
+        // Validate province ID format (should be 1-2 digits)
+        if (!provinceId || !/^\d{1,2}$/.test(provinceId)) {
+            return cb(new Error('Valid province ID is required (1-2 digits)'));
+        }
+        
+        // Ensure province ID is padded to 2 digits for consistency
+        provinceId = provinceId.padStart(2, '0');
         
         // Get file extension while preserving the original extension case
         const ext = path.extname(file.originalname).toLowerCase();
@@ -31,11 +41,12 @@ const storage = multer.diskStorage({
         const timestamp = Date.now();
         const randomString = Math.random().toString(36).substring(2, 8); // 6 character random string
         const filename = `province_${provinceId}_${timestamp}_${randomString}${ext}`;
-        console.log('📝 Generated filename:', filename);
+        console.log('📝 Generated filename:', filename);        // Clean up old images for this province using exact 2-digit ID matching
+        const filePattern = new RegExp(`^province_${provinceId}(?:_\\d+_[a-z0-9]+|\\.\\w+)$`);
+        console.log('🔍 Looking for files matching pattern:', filePattern);
         
-        // Clean up old images for this province
-        const filePattern = new RegExp(`^province_${provinceId}_\\d+_[a-z0-9]+`);
         const existingFiles = fs.readdirSync(provincesDir);
+        console.log('📂 Found files in directory:', existingFiles);
         let existingFilesRemoved = 0;
         
         for (const existingFile of existingFiles) {
