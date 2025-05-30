@@ -18,6 +18,10 @@ require("dotenv").config();
 const app = express();
 connectDB();
 
+// Body parser middleware (set up first)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // Set up CORS for the frontend with proper options
 app.use(cors({
     origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
@@ -27,57 +31,14 @@ app.use(cors({
     exposedHeaders: ['Set-Cookie']
 }));
 
-// Set up static file serving with proper headers
-app.use('/images', express.static(path.join(__dirname, 'public/images'), {
-    setHeaders: (res) => {
-        res.set({
-            'Cache-Control': 'public, max-age=31536000',
-            'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Accept',
-            'Access-Control-Allow-Credentials': 'true'
-        });
-    }
-}));
-
-// Serve province images with fallback
-app.use('/images/provinces/:filename', (req, res, next) => {
-    const filePath = path.join(__dirname, 'public/images/provinces', req.params.filename);
-    const fallbackPath = path.join(__dirname, 'public/images/placeholder.jpg');
-    
-    fs.access(filePath, fs.constants.F_OK, (err) => {
-        if (err) {
-            console.log(`Province image not found: ${filePath}, using fallback`);
-            res.sendFile(fallbackPath);
-        } else {
-            res.sendFile(filePath);
-        }
-    });
-});
-
-// Ensure upload directories exist
-const ensureDir = (dirPath) => {
-    const fullPath = path.join(__dirname, 'public', dirPath);
-    if (!fs.existsSync(fullPath)) {
-        fs.mkdirSync(fullPath, { recursive: true });
-    }
-};
-
-ensureDir('images/provinces');
-ensureDir('uploads/provinces');
-
-// Body parser middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
 // Debug middleware to log all requests
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
 
-//Session middleware
+// Session middleware
 app.use(session({
-    // should be in .env file 
     secret: process.env.SESSION_SECRET || '12345',
     resave: false,
     saveUninitialized: false,
@@ -99,54 +60,106 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Configure middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cors({
-    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],  // Allow both localhost and 127.0.0.1
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Accept"],
-    exposedHeaders: ["Set-Cookie"]
+// Ensure upload directories exist
+const ensureDir = (dirPath) => {
+    const fullPath = path.join(__dirname, 'public', dirPath);
+    if (!fs.existsSync(fullPath)) {
+        fs.mkdirSync(fullPath, { recursive: true });
+    }
+};
+
+ensureDir('images/provinces');
+ensureDir('uploads/provinces');
+
+// Set up static file serving with proper headers
+app.use('/images', express.static(path.join(__dirname, 'public/images'), {
+    setHeaders: (res, path, stat) => {
+        // req is not available in this function
+        // We can't access req.headers.origin here
+        
+        res.set({
+            'Cache-Control': 'public, max-age=31536000',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Accept',
+            'Access-Control-Allow-Credentials': 'true'
+        });
+        
+        // Log image requests for debugging
+        console.log(`Image requested: ${path}`);
+    }
 }));
 
-// Serve static files from the public directory with CORS headers
-app.use('/images', (req, res, next) => {
-  // Determine the origin
-  const origin = req.headers.origin;
-  if (origin === 'http://localhost:3000' || origin === 'http://127.0.0.1:3000') {
-    res.set('Access-Control-Allow-Origin', origin);
+// Serve province images with fallback
+// Improve province images serving with better fallback logic
+app.get('/images/provinces/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const provincesDir = path.join(__dirname, 'public/images/provinces');
+  
+  // The exact file path requested
+  const exactPath = path.join(provincesDir, filename);
+  
+  // Try to find the file directly
+  if (fs.existsSync(exactPath)) {
+    return res.sendFile(exactPath);
   }
   
-  res.set({
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Accept',
-    'Access-Control-Allow-Credentials': 'true',
-    'Cache-Control': 'public, max-age=31536000' // Cache images for 1 year
-  });
+  // If not found directly, try to extract province ID from filename
+  let provinceId;
   
-  // Log image requests for debugging
-  console.log(`Image requested: ${req.path}`);
-  next();
-}, express.static(path.join(__dirname, 'public/images'), {
-  maxAge: '1y', // Cache for 1 year
-  etag: true,
-  fallthrough: true  // Continue to next middleware if file not found
-}));
+  // Case 1: filename is "province_XX_timestamp_random.ext"
+  const patternWithTimestamp = /^province_(\d{1,2})_\d+_[a-z0-9]+\.[a-z]+$/i;
+  const matchWithTimestamp = filename.match(patternWithTimestamp);
+  
+  // Case 2: filename is "province_XX.ext"
+  const patternSimple = /^province_(\d{1,2})\.[a-z]+$/i;
+  const matchSimple = filename.match(patternSimple);
+  
+  // Case 3: filename is just "XX.ext"
+  const patternId = /^(\d{1,2})\.[a-z]+$/i;
+  const matchId = filename.match(patternId);
+  
+  if (matchWithTimestamp) {
+    provinceId = matchWithTimestamp[1].padStart(2, '0');
+  } else if (matchSimple) {
+    provinceId = matchSimple[1].padStart(2, '0');
+  } else if (matchId) {
+    provinceId = matchId[1].padStart(2, '0');
+  }
+  
+  if (provinceId) {
+    console.log(`🔍 Looking for any image file for province ID: ${provinceId}`);
+    
+    // Read the directory
+    const files = fs.readdirSync(provincesDir);
+    
+    // Find any file that matches this province ID with any format
+    const provincePattern = new RegExp(`^(province_)?${provinceId}(_\\d+_[a-z0-9]+)?\\.[a-z]+$`, 'i');
+    const matchingFile = files.find(file => provincePattern.test(file));
+    
+    if (matchingFile) {
+      console.log(`✅ Found matching file: ${matchingFile}`);
+      return res.sendFile(path.join(provincesDir, matchingFile));
+    }
+  }
+  
+  // If all else fails, use placeholder
+  console.log(`❌ No image found for: ${filename}, using fallback`);
+  res.sendFile(path.join(__dirname, 'public/images/placeholder.jpg'));
+});
 
 // Fallback route for images
 app.use('/images/:type/:filename', (req, res, next) => {
-  const { type, filename } = req.params;
-  const requestedPath = path.join(__dirname, 'public', 'images', type, filename);
-  const fallbackPath = path.join(__dirname, 'public', 'images', 'placeholder.jpg');
-  
-  fs.access(requestedPath, fs.constants.F_OK, (err) => {
-    if (err) {
-      console.log(`Image not found: ${requestedPath}, using fallback`);
-      return res.sendFile(fallbackPath);
-    }
-    next();
-  });
+    const { type, filename } = req.params;
+    const requestedPath = path.join(__dirname, 'public', 'images', type, filename);
+    const fallbackPath = path.join(__dirname, 'public', 'images', 'placeholder.jpg');
+    
+    fs.access(requestedPath, fs.constants.F_OK, (err) => {
+        if (err) {
+            console.log(`Image not found: ${requestedPath}, using fallback`);
+            return res.sendFile(fallbackPath);
+        }
+        next();
+    });
 });
 
 // Debug route to check if server is running
@@ -214,10 +227,10 @@ app.get('/api/check-province-images', async (req, res) => {
 
 // Mount API routes
 app.use('/api/users', userRoutes);
-app.use('/api/reset', passwordRoutes);  // Mount password reset routes
+app.use('/api/reset', passwordRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/questions', questionRoutes);
-app.use('/api/provinces', provinceRoutes); // Mount province routes at /api/provinces
+app.use('/api/provinces', provinceRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -238,3 +251,6 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+// Add this after your other routes
+const { GridFSBucket } = require('mongodb');
+

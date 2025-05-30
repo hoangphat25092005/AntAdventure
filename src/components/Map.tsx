@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { MapContainer, TileLayer, GeoJSON, useMap, Polygon, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -15,21 +15,7 @@ const vietnamBounds: L.LatLngBoundsExpression = [
   [25.09, 109.46]  // Northeast corner - moved further north from 23.39 to 25.39
 ];
 
-const vietnamOutline: L.LatLngExpression[] = [
-  [6.0, 101.0],    // Southwest 
-  [6.0, 120.0],    // Southeast 
-  [25.39, 120.0],  // Northeast 
-  [25.39, 101.0],  // Northwest 
-  [6.0, 101.0],    // Back to Southwest to close the polygon
-];
-// Outer bounds - larger than the entire visible map
-const outerBounds: L.LatLngExpression[] = [
-  [-90, -180],
-  [-90, 180],
-  [90, 180],
-  [90, -180],
-  [-90, -180],
-];
+// Province location overrides for better label placement
 const provinceLocationOverrides: Record<string, [number, number]> = {
   // ID: [latitude, longitude] - inland positions
   "04": [16.0544, 108.0220], 
@@ -37,7 +23,7 @@ const provinceLocationOverrides: Record<string, [number, number]> = {
   "50": [10.5800, 107.2800]  
 };
 
-
+// Helper function to normalize Vietnamese text for comparison
 function normalizeVietnamese(str: string) {
   return str
     .replace(/[àáạảãâầấậẩẫăằắặẳẵ]/g, 'a')
@@ -48,6 +34,23 @@ function normalizeVietnamese(str: string) {
     .replace(/[ỳýỵỷỹ]/g, 'y')
     .replace(/đ/g, 'd');
 }
+
+// Helper function to find a province by name with normalization
+const findProvinceByName = (provinceName: string) => {
+  // Try direct match first
+  let province = provinces.find(p => p.name === provinceName);
+  
+  // If no direct match, try case-insensitive and removing diacritics
+  if (!province) {
+    const normalizedName = provinceName.replace(/\s+/g, '').toLowerCase();
+    province = provinces.find(p => 
+      p.name.replace(/\s+/g, '').toLowerCase() === normalizedName ||
+      normalizeVietnamese(p.name).replace(/\s+/g, '').toLowerCase() === normalizedName
+    );
+  }
+  
+  return province;
+};
 
 // Component to handle GeoJSON data and interaction
 const GeoJSONLayer = ({ 
@@ -66,59 +69,15 @@ const GeoJSONLayer = ({
   const [provinceDetails, setProvinceDetails] = useState<Record<string, any>>({});
   const [initialViewState, setInitialViewState] = useState<{center: L.LatLng, zoom: number} | null>(null);
   const [provinceLabels, setProvinceLabels] = useState<{position: [number, number], name: string}[]>([]);
+  const fetchedProvincesRef = useRef<Set<string>>(new Set());
+  const isMounted = useRef(true);
 
-  // Fetch province details from server
-  const fetchProvinceDetails = useCallback(async () => {
-    try {
-      const response = await fetch('http://localhost:3001/api/provinces');
-      if (response.ok) {
-        const provincesData = await response.json();
-        const details: Record<string, any> = {};
-        
-        // Process and normalize the data
-        provincesData.forEach((province: any) => {
-          const id = province.id || province.provinceId;
-          if (id) {
-            // Ensure imageUrl is fully qualified and cached
-            const imageUrl = province.imageUrl ? (
-              province.imageUrl.startsWith('http') 
-                ? province.imageUrl 
-                : `http://localhost:3001${province.imageUrl.startsWith('/') ? province.imageUrl : `/${province.imageUrl}`}`
-            ) : `https://via.placeholder.com/300x200?text=${encodeURIComponent(province.name)}`;
-
-            details[id] = {
-              ...province,
-              id: id,
-              provinceId: id,
-              imageUrl: imageUrl
-            };
-
-            // Preload the image
-            const img = new Image();
-            img.src = imageUrl;
-          }
-        });
-        
-        console.log('✅ Fetched province details:', details);
-        setProvinceDetails(details);
-        
-        // Update popup if currently showing
-        if (popupProvince && details[popupProvince.id]) {
-          setPopupProvince(prev => ({
-            ...prev,
-            ...details[popupProvince.id]
-          }));
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching province details:', error);
-    }
-  }, [popupProvince]);
-
-  // Fetch initial province details
+  // Clean up when component unmounts
   useEffect(() => {
-    fetchProvinceDetails();
-  }, [fetchProvinceDetails]);
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // Store initial map state
   useEffect(() => {
@@ -127,6 +86,77 @@ const GeoJSONLayer = ({
       zoom: map.getZoom()
     });
   }, [map]);
+
+  // Fetch province details from server - optimized to prevent repeated calls
+  const fetchProvinceDetails = useCallback(async (specificProvinceId?: string) => {
+    try {
+      // If we're requesting a specific province that's already been fetched, skip
+      if (specificProvinceId && fetchedProvincesRef.current.has(specificProvinceId)) {
+        console.log(`Province ${specificProvinceId} already fetched, skipping API call`);
+        return;
+      }
+
+      console.log('Fetching province details...');
+      const response = await fetch('http://localhost:3001/api/provinces');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch province details: ${response.status}`);
+      }
+      
+      const provincesData = await response.json();
+      
+      if (!isMounted.current) return;
+      
+      // Process and normalize the data
+      const details: Record<string, any> = {...provinceDetails};
+      
+      provincesData.forEach((province: any) => {
+        const id = province.id || province.provinceId;
+        if (id) {
+          // Mark this province as fetched
+          fetchedProvincesRef.current.add(id);
+          
+          // Ensure imageUrl is fully qualified and cached
+          const imageUrl = province.imageUrl ? (
+            province.imageUrl.startsWith('http') 
+              ? province.imageUrl 
+              : `http://localhost:3001${province.imageUrl.startsWith('/') ? province.imageUrl : `/${province.imageUrl}`}`
+          ) : `https://via.placeholder.com/300x200?text=${encodeURIComponent(province.name)}`;
+
+          details[id] = {
+            ...details[id],
+            ...province,
+            id: id,
+            provinceId: id,
+            imageUrl: imageUrl
+          };
+
+          // Preload the image
+          const img = new Image();
+          img.src = imageUrl;
+        }
+      });
+      
+      console.log('✅ Fetched province details');
+      setProvinceDetails(details);
+      
+      // Update popup if currently showing and the data has changed
+      if (popupProvince && details[popupProvince.id] && 
+          JSON.stringify(details[popupProvince.id]) !== JSON.stringify(provinceDetails[popupProvince.id])) {
+        setPopupProvince(prev => ({
+          ...prev,
+          ...details[popupProvince.id]
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching province details:', error);
+    }
+  }, [provinceDetails, popupProvince]);
+
+  // Fetch initial province details only once
+  useEffect(() => {
+    fetchProvinceDetails();
+  }, []);
 
   // Handle image update for a specific province
   const handleImageUpdate = useCallback(async (provinceId: string, newImageUrl: string) => {
@@ -141,8 +171,8 @@ const GeoJSONLayer = ({
       }
     }));
     
-    // Fetch fresh data to ensure consistency
-    await fetchProvinceDetails();
+    // Fetch fresh data for this specific province
+    await fetchProvinceDetails(provinceId);
   }, [fetchProvinceDetails]);
 
   // Reset popup and map position
@@ -158,29 +188,23 @@ const GeoJSONLayer = ({
     }
   }, [initialViewState, map]);
 
-  // Province click handler
+  // Province click handler - optimized to prevent unnecessary state updates
   const onProvinceClick = useCallback((feature: any, layer: L.Layer) => {
     const provinceName = feature.properties.Name;
-    let province = provinces.find(p => p.name === provinceName);
-    
-    if (!province) {
-      const normalizedName = provinceName.replace(/\s+/g, '').toLowerCase();
-      province = provinces.find(p => 
-        p.name.replace(/\s+/g, '').toLowerCase() === normalizedName ||
-        normalizeVietnamese(p.name).replace(/\s+/g, '').toLowerCase() === normalizedName
-      );
-    }
+    const province = findProvinceByName(provinceName);
     
     if (province) {
       const provinceId = province.id;
       console.log('Province clicked:', provinceName, 'ID:', provinceId);
       
+      // If clicking the already selected province, deselect it
       if (selectedProvinceId === provinceId) {
         handlePopupClose();
         onProvinceSelect('');
         return;
       }
       
+      // Otherwise, select the new province
       onProvinceSelect(provinceId);
       
       // Get popup position
@@ -198,28 +222,23 @@ const GeoJSONLayer = ({
       
       // Set popup with merged province data
       setPopupPosition(position);
+      
+      // Only fetch details if we don't already have them
+      if (!fetchedProvincesRef.current.has(provinceId)) {
+        fetchProvinceDetails(provinceId);
+      }
+      
       setPopupProvince({
         ...province,
         ...provinceDetails[provinceId]
       });
     }
-  }, [selectedProvinceId, provinceDetails, handlePopupClose, onProvinceSelect]);
+  }, [selectedProvinceId, provinceDetails, handlePopupClose, onProvinceSelect, fetchProvinceDetails]);
 
+  // Style function for provinces - memoized to prevent unnecessary recalculations
   const styleFunction = useCallback((feature: any) => {
     const provinceName = feature.properties.Name;
-    
-    // Try direct match first
-    let province = provinces.find(p => p.name === provinceName);
-    
-    // If no direct match, try case-insensitive and removing diacritics
-    if (!province) {
-      const normalizedName = provinceName.replace(/\s+/g, '').toLowerCase();
-      province = provinces.find(p => 
-        p.name.replace(/\s+/g, '').toLowerCase() === normalizedName ||
-        normalizeVietnamese(p.name).replace(/\s+/g, '').toLowerCase() === normalizedName
-      );
-    }
-    
+    const province = findProvinceByName(provinceName);
     const provinceId = province?.id;
     const isSelected = provinceId === selectedProvinceId;
     
@@ -232,66 +251,14 @@ const GeoJSONLayer = ({
     };
   }, [selectedProvinceId]);
 
-  // Update styles when selected province changes
-  useEffect(() => {
-    if (geojsonData) {
-      geojsonData.features.forEach(feature => {
-        if (feature.geometry.type === "Polygon" || feature.geometry.type === "MultiPolygon") {
-          // Get the province name and find corresponding province
-          const provinceName = feature.properties.Name;
-          let province = provinces.find(p => p.name === provinceName);
-          
-          if (!province) {
-            const normalizedName = provinceName.replace(/\s+/g, '').toLowerCase();
-            province = provinces.find(p => 
-              p.name.replace(/\s+/g, '').toLowerCase() === normalizedName ||
-              normalizeVietnamese(p.name).replace(/\s+/g, '').toLowerCase() === normalizedName
-            );
-          }
-          
-          if (province) {
-            // Use override position if available, otherwise use center of province
-            let position: [number, number];
-            
-            if (provinceLocationOverrides[province.id]) {
-              position = provinceLocationOverrides[province.id];
-            } else {
-              const layer = L.geoJSON(feature);
-              const bounds = layer.getBounds();
-              const center = bounds.getCenter();
-              position = [center.lat, center.lng];
-            }
-            
-            // Update province details with fetched data
-            setProvinceDetails(prevDetails => ({
-              ...prevDetails,
-              [province.id]: {
-                ...prevDetails[province.id],
-                ...provinceDetails[province.id]
-              }
-            }));
-          }
-        }
-      });
-    }
-  }, [geojsonData, provinceDetails]);
-
-  // Calculate province labels
+  // Calculate province labels once when geojsonData changes
   useEffect(() => {
     if (geojsonData) {
       const labels: {position: [number, number], name: string}[] = [];
       
       geojsonData.features.forEach(feature => {
         const provinceName = feature.properties.Name;
-        let province = provinces.find(p => p.name === provinceName);
-        
-        if (!province) {
-          const normalizedName = provinceName.replace(/\s+/g, '').toLowerCase();
-          province = provinces.find(p => 
-            p.name.replace(/\s+/g, '').toLowerCase() === normalizedName ||
-            normalizeVietnamese(p.name).replace(/\s+/g, '').toLowerCase() === normalizedName
-          );
-        }
+        const province = findProvinceByName(provinceName);
         
         if (province) {
           let position: [number, number];
@@ -374,6 +341,7 @@ const Map: React.FC<MapProps> = ({ onProvinceSelect, selectedProvinceId }) => {
   const [geojsonData, setGeojsonData] = useState<ProvinceFeatureCollection | null>(null);
   const [error, setError] = useState<string | null>(null);
   
+  // Fetch GeoJSON data once on component mount
   useEffect(() => {
     const fetchGeoJson = async () => {
       try {

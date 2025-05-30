@@ -1,7 +1,8 @@
 const ProvinceDetails = require('../models/province.model');
 const path = require('path');
 const fs = require('fs');
-
+const mongoose = require('mongoose');
+const { GridFSBucket } = require('mongodb');
 //Get all province details
 const getAllProvinces = async (req, res) => {
     try {
@@ -118,34 +119,51 @@ const addProvince = async (req, res) => {
         }
 
         // Handle file upload
-        if (req.file) {
-            console.log('🖼️ Processing uploaded file:', req.file);
-            
-            // Update the image URL to point to the new file            const newImageUrl = `/images/provinces/${req.file.filename}`;
-            
-            // Store the absolute URL in the database for consistency
-            const absoluteUrl = `http://localhost:3001/images/provinces/${req.file.filename}`;
-            
-            // If there's an existing image, try to remove it (cleanup is now handled in provinceUpload middleware)
-            if (province.imageUrl) {
+    // Handle file upload
+    if (req.file) {
+    console.log('🖼️ Processing uploaded file:', req.file);
+    
+    // Use the traditional filesystem path format
+    const filesystemImageUrl = `/images/provinces/${req.file.filename}`;
+    
+    // If there's an existing image, try to remove it
+    if (province.imageUrl) {
+        try {
+            // Extract filename from existing URL
+            const existingFilename = province.imageUrl.split('/').pop();
+            if (existingFilename) {
+                // For compatibility with previous filesystem storage
+                const oldImagePath = path.join(__dirname, '../public/images/provinces', existingFilename);
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlinkSync(oldImagePath);
+                    console.log('🗑️ Removed old image file from filesystem:', oldImagePath);
+                }
+                
+                // Also try to remove from MongoDB GridFS if it exists there
                 try {
-                    // Extract filename from existing URL
-                    const existingFilename = province.imageUrl.split('/').pop();
-                    if (existingFilename) {
-                        const oldImagePath = path.join(__dirname, '../public/images/provinces', existingFilename);
-                        if (fs.existsSync(oldImagePath)) {
-                            fs.unlinkSync(oldImagePath);
-                            console.log('🗑️ Removed old image file:', oldImagePath);
-                        }
+                    const db = mongoose.connection.db;
+                    const bucket = new GridFSBucket(db, { bucketName: 'images' });
+                    
+                    // Find the file ID first
+                    const file = await db.collection('images.files').findOne({ filename: existingFilename });
+                    if (file) {
+                        await bucket.delete(file._id);
+                        console.log('🗑️ Removed old image file from GridFS:', existingFilename);
                     }
-                } catch (err) {
-                    console.error('❌ Error removing old image file:', err);
+                } catch (gridfsErr) {
+                    console.error('❌ Error removing old image from GridFS:', gridfsErr);
                 }
             }
-            
-            province.imageUrl = absoluteUrl;
-            console.log('🔄 Updated image URL to:', province.imageUrl);
+        } catch (err) {
+            console.error('❌ Error removing old image file:', err);
         }
+    }
+    
+    // Store the filesystem URL (not MongoDB URL)
+    province.imageUrl = filesystemImageUrl;
+    console.log('🔄 Updated image URL to filesystem path:', province.imageUrl);
+    }
+
 
         // Process other fields if they are provided
         if (req.body.name) province.name = req.body.name;

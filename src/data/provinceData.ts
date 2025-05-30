@@ -17,7 +17,7 @@ export const provinces: Province[] = [
     population: 8053663,
     area: 3358.9,
     region: "Red River Delta",
-    imageUrl: "/images/provinces/hanoi.jpg"
+    //imageUrl: "/images/provinces/hanoi.jpg"
   },
   {
     id: "02",
@@ -26,7 +26,7 @@ export const provinces: Province[] = [
     population: 8993082,
     area: 2095.5,
     region: "Southeast",
-    imageUrl: "/images/provinces/hochiminh.jpg"
+    //imageUrl: "/images/provinces/hochiminh.jpg"
   },
   {
     id: "03",
