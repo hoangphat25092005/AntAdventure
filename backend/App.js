@@ -10,11 +10,29 @@ const userRoutes = require("./routing/user.routing");
 const feedbackRoutes = require("./routing/feedback.routing");
 const questionRoutes = require("./routing/questions.routing");
 const provinceRoutes = require("./routing/province.routing");
+const passwordRoutes = require("./routing/password.routing");
 
 require("dotenv").config();
 
 const app = express();
 connectDB();
+
+// Serve static files from public directory
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads'), {
+    setHeaders: (res, path) => {
+        res.set('Cache-Control', 'no-cache');
+    }
+}));
+app.use('/uploads/avatars', express.static(path.join(__dirname, 'public/uploads/avatars'), {
+    setHeaders: (res, path) => {
+        res.set('Cache-Control', 'no-cache');
+    }
+}));
+app.use(express.static('public'));
+
+// Body parser middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Debug middleware to log all requests
 app.use((req, res, next) => {
@@ -161,6 +179,7 @@ app.get('/api/check-province-images', async (req, res) => {
 
 // Mount API routes
 app.use('/api/users', userRoutes);
+app.use('/api/reset', passwordRoutes);  // Mount password reset routes
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/provinces', provinceRoutes); // Mount province routes at /api/provinces

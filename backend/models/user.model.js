@@ -9,18 +9,33 @@ const userSchema = new mongoose.Schema({
         required: true,
         unique: true,
         trim: true
-    },
-    password: {
+    },    password: {
         type: String,
-        required: true,
+        required: function() {
+            return !this.googleId; // Only require password for non-Google users
+        },
         trim: true,
         minlength: 8
     },
     email: {
         type: String,
         required: true,
-        trim: true,
-        unique: true
+        unique: true,
+    },
+    resetPasswordToken: {
+        type: String,
+    },    resetPasswordExpires: {
+        type: Date    },    
+    googleId: {
+        type: String
+    },
+    avatar: {
+        type: String,
+        default: ''
+    },
+    avatar: {
+        type: String,
+        default: ''
     },
     role: {
         type: String,

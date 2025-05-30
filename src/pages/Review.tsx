@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { provinces } from "../data/provinceData";
+import ImageUpload from "../components/ImageUpload";
 
 interface ProvinceDetails {
   id: string;
@@ -103,25 +104,81 @@ const ReviewContent: React.FC = () => {
 
   const currentQuestion = questions[currentQuestionIndex];
 
+  const handleProvinceImageUpload = async (file: File) => {
+    if (!provinceDetails) return;
+
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('id', provinceDetails.id);
+    formData.append('name', provinceDetails.name);
+    formData.append('introduction', provinceDetails.introduction);
+    formData.append('famousFor', JSON.stringify(provinceDetails.famousFor));
+    formData.append('attractions', JSON.stringify(provinceDetails.attractions));
+
+    try {
+      const response = await fetch(`http://localhost:3001/api/provinces/${provinceDetails.id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const updatedProvince = await response.json();
+        setProvinceDetails(updatedProvince);
+      } else {
+        console.error('Failed to update province image');
+      }
+    } catch (error) {
+      console.error('Error updating province image:', error);
+    }
+  };
+
+  const handleQuestionImageUpload = async (file: File) => {
+    if (!currentQuestion) return;
+
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('question', currentQuestion.question);
+    formData.append('options', JSON.stringify(currentQuestion.options));
+    formData.append('correctAnswer', currentQuestion.correctAnswer.toString());
+    formData.append('provinceName', provinceDetails?.name || '');
+
+    try {
+      const response = await fetch(`http://localhost:3001/api/questions/updateQuestion/${currentQuestion._id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const updatedQuestion = await response.json();
+        setQuestions(questions.map(q => 
+          q._id === currentQuestion._id ? updatedQuestion : q
+        ));
+      } else {
+        console.error('Failed to update question image');
+      }
+    } catch (error) {
+      console.error('Error updating question image:', error);
+    }
+  };
+
   return (
     <div
       className={`bg-gradient-to-br from-[#5dbcc3] to-[#4a9ba1] w-full min-h-screen transition-opacity duration-1000 ${
         isLoaded ? "opacity-100" : "opacity-0"
       }`}
     >
-      {/* Main Content */}      <div className="flex justify-center items-start py-12 px-8 gap-24">
+      {/* Main Content */}      <div className="flex items-start justify-center gap-24 px-8 py-12">
         {/* Review Card */}
         <div className="group bg-gradient-to-br from-[#e8f4f6] to-[#d1e9ec] rounded-3xl p-6 w-[400px] shadow-md hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 relative overflow-hidden">
           {/* Shine effect */}
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
-
-          <div className="overflow-hidden rounded-lg mb-4 relative">
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>          <div className="relative mb-4 overflow-hidden rounded-lg">
             {provinceDetails && (
               <img
                 src={`http://localhost:3001${provinceDetails.imageUrl}`}
                 alt={`${provinceDetails.name} view`}
-                className="w-full h-48 object-cover rounded-lg transition-all duration-700 group-hover:scale-110 group-hover:brightness-110"
+                className="object-cover w-full h-48 transition-all duration-700 rounded-lg group-hover:scale-110 group-hover:brightness-110"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.src = "https://via.placeholder.com/400x300?text=" + provinceDetails.name;
@@ -136,15 +193,14 @@ const ReviewContent: React.FC = () => {
           </h2>
 
           <div className="text-[16px] leading-relaxed text-black space-y-4 transition-all duration-300 group-hover:text-gray-700">
-            <p className="transform transition-all duration-500 hover:translate-x-2">
+            <p className="transition-all duration-500 transform hover:translate-x-2">
               {provinceDetails?.introduction}
             </p>
-            
-            <div className="mt-4">
-              <h3 className="text-lg font-medium mb-2">Famous For:</h3>
-              <ul className="list-disc list-inside space-y-1">
-                {provinceDetails?.famousFor.map((item, index) => (
-                  <li key={index} className="transform transition-all duration-500 hover:translate-x-2">
+              <div className="mt-4">
+              <h3 className="mb-2 text-lg font-medium">Famous For:</h3>
+              <ul className="space-y-1 list-disc list-inside">
+                {provinceDetails?.famousFor?.map((item, index) => (
+                  <li key={index} className="transition-all duration-500 transform hover:translate-x-2">
                     {item}
                   </li>
                 ))}
@@ -152,10 +208,10 @@ const ReviewContent: React.FC = () => {
             </div>
 
             <div className="mt-4">
-              <h3 className="text-lg font-medium mb-2">Must-Visit Attractions:</h3>
-              <ul className="list-disc list-inside space-y-1">
-                {provinceDetails?.attractions.map((attraction, index) => (
-                  <li key={index} className="transform transition-all duration-500 hover:translate-x-2">
+              <h3 className="mb-2 text-lg font-medium">Must-Visit Attractions:</h3>
+              <ul className="space-y-1 list-disc list-inside">
+                {provinceDetails?.attractions?.map((attraction, index) => (
+                  <li key={index} className="transition-all duration-500 transform hover:translate-x-2">
                     {attraction}
                   </li>
                 ))}
@@ -181,10 +237,7 @@ const ReviewContent: React.FC = () => {
 
               {/* Main button content */}
               <div
-                className="relative z-10 transition-all duration-300 
-      group-hover:-translate-x-1 
-      group-hover:scale-110 
-      group-active:scale-90"
+                className="relative z-10 transition-all duration-300 group-hover:-translate-x-1 group-hover:scale-110 group-active:scale-90"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -228,10 +281,7 @@ const ReviewContent: React.FC = () => {
 
               {/* Main button content */}
               <div
-                className="relative z-10 transition-all duration-300 
-      group-hover:translate-x-1 
-      group-hover:scale-110 
-      group-active:scale-90"
+                className="relative z-10 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110 group-active:scale-90"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -276,18 +326,21 @@ const ReviewContent: React.FC = () => {
               {/* Front face */}
               <div className="absolute inset-0 bg-gradient-to-br from-[#e8f4f6] to-[#d1e9ec] rounded-3xl p-8 w-full flex flex-col overflow-y-auto max-h-[500px] [backface-visibility:hidden] cursor-pointer transition-all duration-300 hover:shadow-xl group overflow-x-hidden">
                 <div className="relative">
-                  <div className="transform transition-transform duration-300 group-hover:translate-x-2">
+                  <div className="transition-transform duration-300 transform group-hover:translate-x-2">
                     {currentQuestion ? (
                       <>
-                        <h3 className="text-2xl font-medium text-black group-hover:text-orange-500 transition-colors duration-300 break-words">
+                        <h3 className="text-2xl font-medium text-black break-words transition-colors duration-300 group-hover:text-orange-500">
                           Question {currentQuestionIndex + 1}: {currentQuestion.question}
-                        </h3>
-                        {currentQuestion.image && (
+                        </h3>                        {currentQuestion.image && (
                           <div className="mt-4">
                             <img 
                               src={`http://localhost:3001${currentQuestion.image}`} 
                               alt="Question" 
-                              className="max-w-full h-auto rounded-lg shadow-md"
+                              className="h-auto max-w-full rounded-lg shadow-md"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = "https://via.placeholder.com/400x300?text=Question+Image";
+                              }}
                             />
                           </div>
                         )}
@@ -295,7 +348,7 @@ const ReviewContent: React.FC = () => {
                           {currentQuestion.options.map((option, index) => (
                             <div 
                               key={index}
-                              className="p-2 rounded-lg bg-white/50 hover:bg-white/70 transition-colors duration-300"
+                              className="p-2 transition-colors duration-300 rounded-lg bg-white/50 hover:bg-white/70"
                             >
                               {option}
                             </div>
@@ -314,18 +367,18 @@ const ReviewContent: React.FC = () => {
               {/* Back face */}
               <div className="overflow-x-hidden absolute inset-0 bg-gradient-to-br from-[#f6e8f4] to-[#ecd1e9] rounded-3xl p-8 w-full flex flex-col justify-between min-h-[350px] [backface-visibility:hidden] [transform:rotateY(180deg)] cursor-pointer transition-all duration-300 hover:shadow-xl group">
                 <div className="relative overflow-hidden">
-                  <div className="mb-28 transform transition-transform duration-300 group-hover:translate-x-2">
-                    <h3 className="text-2xl font-medium text-black group-hover:text-purple-600 transition-colors duration-300">
+                  <div className="transition-transform duration-300 transform mb-28 group-hover:translate-x-2">
+                    <h3 className="text-2xl font-medium text-black transition-colors duration-300 group-hover:text-purple-600">
                       Answer Explanation
                     </h3>
                   </div>
                   {/* Shine effect */}
                   <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
                 </div>
-                <div className="transform transition-all duration-300 group-hover:translate-x-2">
+                <div className="transition-all duration-300 transform group-hover:translate-x-2">
                   {currentQuestion && (
                     <div className="space-y-4">
-                      <p className="text-xl text-black group-hover:text-purple-600 transition-colors duration-300">
+                      <p className="text-xl text-black transition-colors duration-300 group-hover:text-purple-600">
                         Correct Answer: {currentQuestion.options[currentQuestion.correctAnswer]}
                       </p>
                       <div className="text-lg">

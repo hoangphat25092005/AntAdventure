@@ -16,6 +16,8 @@ const QuestionManager: React.FC = () => {
     const [isAdmin, setIsAdmin] = useState(false);
     const [questions, setQuestions] = useState<Question[]>([]);
     const [selectedProvince, setSelectedProvince] = useState<string>('');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [formData, setFormData] = useState<Question>({
         provinceName: '',
         question: '',
@@ -26,6 +28,7 @@ const QuestionManager: React.FC = () => {
     const [editMode, setEditMode] = useState(false);
     const [selectedQuestionId, setSelectedQuestionId] = useState<string>('');
     const [error, setError] = useState('');
+    const [questionListSearchTerm, setQuestionListSearchTerm] = useState('');
 
     useEffect(() => {
         checkAdminStatus();
@@ -161,17 +164,21 @@ const QuestionManager: React.FC = () => {
     
     // Scroll to the top of the form for better UX
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    };
+
     const handleDelete = async (id: string) => {
         if (!window.confirm('Are you sure you want to delete this question?')) return;
 
-        try {            const response = await fetch(`http://localhost:3001/api/questions/deleteQuestion/${id}`, {
+        try {
+            const response = await fetch(`http://localhost:3001/api/questions/deleteQuestion/${id}`, {
                 method: 'DELETE',
                 credentials: 'include'
             });
 
             if (response.ok) {
-                fetchQuestions();
+                await fetchQuestions();
+                // Scroll to top after deleting
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         } catch (err) {
             console.error('Error deleting question:', err);
@@ -191,36 +198,81 @@ const QuestionManager: React.FC = () => {
         setError('');
     };
 
+    const handleQuestionListSearch = (value: string) => {
+        setQuestionListSearchTerm(value);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // Filter provinces based on search term
+    const filteredProvinces = provinces.filter(province =>
+        province.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Filter questions list based on search term
+    const filteredQuestionsByProvince = Array.from(new Set(questions.map(q => q.provinceName)))
+        .filter(provinceName => 
+            provinceName.toLowerCase().includes(questionListSearchTerm.toLowerCase())
+        )
+        .sort((a, b) => a.localeCompare(b, 'vi-VN'));
+
     if (!isAdmin) {
         return <div>Access denied</div>;
     }    return (
         <div className="min-h-screen p-8 bg-cyan-500">
             <div className="max-w-6xl p-6 mx-auto bg-white rounded-lg shadow-lg">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8">                    <h2 className="text-2xl font-bold">
+                <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-2xl font-bold">
                         {editMode ? 'Edit Question' : 'Add New Question'}
                     </h2>
-                    <select
-                        name="filterProvince"
-                        className="p-2 border rounded-lg"
-                        onChange={(e) => {
-                            const province = provinces.find(p => p.name === e.target.value);
-                            if (province) {
-                                setFormData(prev => ({ ...prev, provinceName: province.name }));
-                            }
-                        }}
-                        value={formData.provinceName}
-                    >
-                        <option value="">Select Province</option>
-                        {provinces
-                            .sort((a, b) => a.name.localeCompare(b.name, 'vi-VN'))
-                            .map(province => (
-                                <option key={province.id} value={province.name}>
-                                    {province.name}
-                                </option>
-                            ))
-                        }
-                    </select>
+                    <div className="relative">
+                        <div className="flex items-center overflow-hidden border rounded-lg">
+                            <input
+                                type="text"
+                                placeholder="Search province..."
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value);
+                                    setIsDropdownOpen(true);
+                                }}
+                                onFocus={() => setIsDropdownOpen(true)}
+                                className="w-64 p-2 focus:outline-none"
+                            />
+                            <button
+                                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                className="p-2 text-gray-500 hover:text-gray-700"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={isDropdownOpen ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
+                                </svg>
+                            </button>
+                        </div>
+                        {isDropdownOpen && (
+                            <div className="absolute z-10 w-full mt-1 overflow-y-auto bg-white border rounded-lg shadow-lg max-h-60">
+                                {filteredProvinces.length > 0 ? (
+                                    filteredProvinces
+                                        .sort((a, b) => a.name.localeCompare(b.name, 'vi-VN'))
+                                        .map(province => (
+                                            <button
+                                                key={province.id}
+                                                className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:outline-none"
+                                                onClick={() => {
+                                                    setFormData(prev => ({ ...prev, provinceName: province.name }));
+                                                    setSearchTerm(province.name);
+                                                    setIsDropdownOpen(false);
+                                                    // Add smooth scroll to top
+                                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                }}
+                                            >
+                                                {province.name}
+                                            </button>
+                                        ))
+                                ) : (
+                                    <div className="px-4 py-2 text-gray-500">No provinces found</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {error && (
@@ -329,79 +381,108 @@ const QuestionManager: React.FC = () => {
                     </div>
                 </form>
 
-                {/* Questions List */}                <div className="mt-8">
-                    <h3 className="mb-4 text-xl font-bold">Questions by Province</h3>
+                {/* Questions List */}
+                <div className="mt-8">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xl font-bold">Questions by Province</h3>
+                        <div className="relative">
+                            <div className="flex items-center">                                <input
+                                    type="text"
+                                    placeholder="Search provinces in list..."
+                                    value={questionListSearchTerm}
+                                    onChange={(e) => handleQuestionListSearch(e.target.value)}
+                                    className="w-64 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                />
+                                {questionListSearchTerm && (
+                                    <button
+                                        onClick={() => {
+                                            setQuestionListSearchTerm('');
+                                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                                        }}
+                                        className="absolute text-gray-500 right-3 hover:text-gray-700"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                     <div className="space-y-6">
-                        {Array.from(new Set(questions.map(q => q.provinceName)))
-                            .sort((a, b) => a.localeCompare(b, 'vi-VN'))
-                            .map(provinceName => (
-                                <div key={provinceName} className="p-4 border rounded-lg">
-                                    <h4 className="p-2 mb-3 text-lg font-semibold bg-orange-100 rounded">
-                                        Province: {provinceName}
-                                    </h4>
-                                    <div className="space-y-4">
-                                        {questions
-                                            .filter(q => q.provinceName === provinceName)
-                                            .map((question) => (
-                                                <div key={question._id} className="p-4 transition-colors border rounded-lg bg-gray-50 hover:bg-gray-100">
-                                                    <div className="flex justify-between">
-                                                        <div className="flex-grow">
-                                                            <h4 className="mb-2 text-lg font-bold">{question.question}</h4>
-                                                            <div className="ml-4 space-y-2">
-                                                                {question.options.map((option, index) => (
-                                                                    <p
-                                                                        key={index}
-                                                                        className={`${
-                                                                            index === question.correctAnswer ? 'text-green-600 font-medium' : 'text-gray-600'
-                                                                        } flex items-center gap-2`}
+                        {filteredQuestionsByProvince.map(provinceName => (
+                            <div key={provinceName} className="p-4 border rounded-lg">
+                                <h4 className="p-2 mb-3 text-lg font-semibold bg-orange-100 rounded">
+                                    Province: {provinceName}
+                                </h4>
+                                <div className="space-y-4">
+                                    {questions
+                                        .filter(q => q.provinceName === provinceName)
+                                        .map((question) => (
+                                            <div key={question._id} className="p-4 transition-colors border rounded-lg bg-gray-50 hover:bg-gray-100">
+                                                <div className="flex justify-between">
+                                                    <div className="flex-grow">
+                                                        <h4 className="mb-2 text-lg font-bold">{question.question}</h4>
+                                                        <div className="ml-4 space-y-2">
+                                                            {question.options.map((option, index) => (
+                                                                <p
+                                                                    key={index}
+                                                                    className={`${
+                                                                        index === question.correctAnswer ? 'text-green-600 font-medium' : 'text-gray-600'
+                                                                    } flex items-center gap-2`}
+                                                                >
+                                                                    <span className={`inline-block w-6 h-6 text-center leading-6 rounded-full 
+                                                                        ${index === question.correctAnswer ? 'bg-green-100' : 'bg-gray-100'}`}
                                                                     >
-                                                                        <span className={`inline-block w-6 h-6 text-center leading-6 rounded-full 
-                                                                            ${index === question.correctAnswer ? 'bg-green-100' : 'bg-gray-100'}`}
-                                                                        >
-                                                                            {String.fromCharCode(65 + index)}
-                                                                        </span>
-                                                                        {option}
-                                                                    </p>
-                                                                ))}
-                                                            </div>
+                                                                        {String.fromCharCode(65 + index)}
+                                                                    </span>
+                                                                    {option}
+                                                                </p>
+                                                            ))}
                                                         </div>
-
-                                                        {question.image && (
-                                                            <div className="flex-shrink-0 ml-4">
-                                                                <img
-                                                                    src={`http://localhost:3001${question.image}`}
-                                                                    alt="Question visual"
-                                                                    className="object-cover w-32 h-32 rounded-lg"
-                                                                />
-                                                            </div>
-                                                        )}
                                                     </div>
 
-                                                    <div className="flex mt-4 space-x-2">
-                                                        <button
-                                                            onClick={() => handleEdit(question)}
-                                                            className="flex items-center gap-2 px-4 py-2 text-white transition-colors bg-yellow-500 rounded-lg hover:bg-yellow-600"
-                                                        >
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                            </svg>
-                                                            Edit
-                                                        </button>
-                                                        <button
-                                                            onClick={() => question._id && handleDelete(question._id)}
-                                                            className="flex items-center gap-2 px-4 py-2 text-white transition-colors bg-red-500 rounded-lg hover:bg-red-600"
-                                                        >
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                            </svg>
-                                                            Delete
-                                                        </button>
-                                                    </div>
+                                                    {question.image && (
+                                                        <div className="flex-shrink-0 ml-4">
+                                                            <img
+                                                                src={`http://localhost:3001${question.image}`}
+                                                                alt="Question visual"
+                                                                className="object-cover w-32 h-32 rounded-lg"
+                                                            />
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            ))}
-                                    </div>
+
+                                                <div className="flex mt-4 space-x-2">
+                                                    <button
+                                                        onClick={() => handleEdit(question)}
+                                                        className="flex items-center gap-2 px-4 py-2 text-white transition-colors bg-yellow-500 rounded-lg hover:bg-yellow-600"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => question._id && handleDelete(question._id)}
+                                                        className="flex items-center gap-2 px-4 py-2 text-white transition-colors bg-red-500 rounded-lg hover:bg-red-600"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
                                 </div>
-                            ))}
+                            </div>
+                        ))}
+                        {filteredQuestionsByProvince.length === 0 && (
+                            <div className="p-4 text-center text-gray-500">
+                                No provinces found matching your search
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

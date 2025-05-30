@@ -1,5 +1,9 @@
 const User = require('../models/user.model');
 const bcrypt = require('bcrypt');
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
+const multer = require('multer');
+const path = require('path');
 
 // Register user
 const registerUser = async (req, res) => {
@@ -141,12 +145,11 @@ const checkLogin = async (req, res) => {
                 success: false,
                 message: "User not found" 
             });
-        }
-
-        return res.status(200).json({ 
+        }        return res.status(200).json({ 
             success: true,
             username: user.username,
-            role: user.role
+            role: user.role,
+            avatar: user.avatar
         });
     } catch (error) {
         console.error("Error checking login status:", error);
@@ -157,11 +160,152 @@ const checkLogin = async (req, res) => {
     }
 };
 
+// Forgot password
+const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found with this email.' });
+        }
+
+        // Generate reset token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetTokenExpires = Date.now() + 3600000; // 1 hour
+
+        // Save token to user document
+        user.resetPasswordToken = resetToken;
+        user.resetPasswordExpires = resetTokenExpires;
+        await user.save();
+
+        // Create nodemailer transport
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        // Email reset link
+        const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: user.email,
+            subject: 'Password Reset Request',
+            html: `
+                <h1>Password Reset Request</h1>
+                <p>You requested a password reset. Click the link below to reset your password:</p>
+                <a href="${resetUrl}">Reset Password</a>
+                <p>If you didn't request this, please ignore this email.</p>
+                <p>This link will expire in 1 hour.</p>
+            `
+        };
+
+        await transporter.sendMail(mailOptions);
+        res.status(200).json({ message: 'Password reset link sent to email.' });
+
+    } catch (error) {
+        console.error('Error in forgot password:', error);
+        res.status(500).json({ message: 'Error processing request.' });
+    }
+};
+
+// Verify reset token
+const verifyResetToken = async (req, res) => {
+    try {
+        const { token } = req.params;
+        const user = await User.findOne({
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Password reset token is invalid or has expired.' });
+        }
+
+        res.status(200).json({ message: 'Token is valid.' });
+    } catch (error) {
+        console.error('Error verifying reset token:', error);
+        res.status(500).json({ message: 'Error verifying reset token.' });
+    }
+};
+
+// Reset password
+const resetPassword = async (req, res) => {
+    try {
+        const { token } = req.params;
+        const { password } = req.body;
+
+        const user = await User.findOne({
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Password reset token is invalid or has expired.' });
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Update user's password and clear reset token fields
+        user.password = hashedPassword;
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+        await user.save();
+
+        res.status(200).json({ message: 'Password has been reset.' });
+    } catch (error) {
+        console.error('Error resetting password:', error);
+        res.status(500).json({ message: 'Error resetting password.' });
+    }
+};
+
+// Update user avatar
+const updateAvatar = async (req, res) => {
+    try {
+        if (!req.session.userId) {
+            return res.status(401).json({ message: 'Not authenticated' });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        const user = await User.findById(req.session.userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        console.log('File uploaded:', req.file);
+        
+        // Update the user's avatar URL
+        user.avatar = `/uploads/avatars/${req.file.filename}`;
+        await user.save();
+
+        console.log('User updated with avatar:', user.avatar);
+
+        res.status(200).json({ 
+            message: 'Avatar updated successfully',
+            avatar: user.avatar
+        });
+    } catch (error) {
+        console.error('Error updating avatar:', error);
+        res.status(500).json({ message: 'Error updating avatar' });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
     checkAdmin,
     logoutUser,
     verifyAdmin,
-    checkLogin
+    checkLogin,
+    forgotPassword,
+    verifyResetToken,
+    resetPassword,
+    updateAvatar
 };

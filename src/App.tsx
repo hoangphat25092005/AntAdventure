@@ -18,6 +18,8 @@ import AdminRegister from './pages/AdminRegister';
 import ProvinceManagement from './pages/ProvinceManagement';
 import CopperDrumImage from './assets/CopperDrum.png';
 import QuestionImport from './pages/Import';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 const App: React.FC = () => {
   useEffect(() => {
     console.log('Google Client ID:', process.env.REACT_APP_GOOGLE_CLIENT_ID);
@@ -37,10 +39,11 @@ const App: React.FC = () => {
               <Route path="/review/:provinceName" element={<div className="bg-opacity-80"><Review /></div>} />
               <Route path="/about-us" element={<div className="bg-opacity-80"><AboutUs /></div>} />              <Route path="/multichoice/:provinceName" element={<div className="bg-opacity-80"><Question /></div>} />
               <Route path="/feedback" element={<div className="bg-opacity-80"><Feedback /></div>} />              <Route path="/manage-questions" element={<div className="bg-opacity-80"><QuestionManagement /></div>} />
-              <Route path="/manage-provinces" element={<div className="bg-opacity-80"><ProvinceManagement /></div>} />
-              <Route path="/admin-login" element={<div className="bg-opacity-80"><AdminLogin /></div>} />
+              <Route path="/manage-provinces" element={<div className="bg-opacity-80"><ProvinceManagement /></div>} />              <Route path="/admin-login" element={<div className="bg-opacity-80"><AdminLogin /></div>} />
               <Route path="/admin-register" element={<div className="bg-opacity-80"><AdminRegister /></div>} />
               <Route path="/import" element={<QuestionImport />} />
+              <Route path="/forgot-password" element={<div className="bg-opacity-80"><ForgotPasswordPage /></div>} />
+              <Route path="/reset-password/:token" element={<div className="bg-opacity-80"><ResetPasswordPage /></div>} />
              </Routes>
           </div>
         </main>
