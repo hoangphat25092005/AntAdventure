@@ -174,14 +174,18 @@ const ReviewContent: React.FC = () => {
         <div className="group bg-gradient-to-br from-[#e8f4f6] to-[#d1e9ec] rounded-3xl p-6 w-[400px] shadow-md hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 relative overflow-hidden">
           {/* Shine effect */}
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>          <div className="relative mb-4 overflow-hidden rounded-lg">
-            {provinceDetails && (
-              <img
-                src={`http://localhost:3001${provinceDetails.imageUrl}`}
+            {provinceDetails && (              <img
+                src={provinceDetails.imageUrl?.startsWith('http') 
+                  ? provinceDetails.imageUrl 
+                  : provinceDetails.imageUrl?.startsWith('/') 
+                    ? `http://localhost:3001${provinceDetails.imageUrl}`
+                    : `http://localhost:3001/uploads/provinces/${provinceDetails.imageUrl}`}
                 alt={`${provinceDetails.name} view`}
                 className="object-cover w-full h-48 transition-all duration-700 rounded-lg group-hover:scale-110 group-hover:brightness-110"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.src = "https://via.placeholder.com/400x300?text=" + provinceDetails.name;
+                  console.error("Failed to load province image:", provinceDetails.imageUrl);
                 }}
               />
             )}
@@ -332,14 +336,16 @@ const ReviewContent: React.FC = () => {
                         <h3 className="text-2xl font-medium text-black break-words transition-colors duration-300 group-hover:text-orange-500">
                           Question {currentQuestionIndex + 1}: {currentQuestion.question}
                         </h3>                        {currentQuestion.image && (
-                          <div className="mt-4">
-                            <img 
-                              src={`http://localhost:3001${currentQuestion.image}`} 
+                          <div className="mt-4">                            <img 
+                              src={currentQuestion.image?.startsWith('http') 
+                                ? currentQuestion.image 
+                                : `http://localhost:3001${currentQuestion.image}`} 
                               alt="Question" 
                               className="h-auto max-w-full rounded-lg shadow-md"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 target.src = "https://via.placeholder.com/400x300?text=Question+Image";
+                                console.error("Failed to load image:", currentQuestion.image);
                               }}
                             />
                           </div>

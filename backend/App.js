@@ -5,6 +5,7 @@ const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const mongoose = require("mongoose");
 const path = require("path");
+const fs = require('fs');
 const passport = require('./config/passport');
 const userRoutes = require("./routing/user.routing");
 const feedbackRoutes = require("./routing/feedback.routing");
@@ -17,18 +18,52 @@ require("dotenv").config();
 const app = express();
 connectDB();
 
-// Serve static files from public directory
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads'), {
-    setHeaders: (res, path) => {
-        res.set('Cache-Control', 'no-cache');
+// Set up CORS for the frontend with proper options
+app.use(cors({
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    exposedHeaders: ['Set-Cookie']
+}));
+
+// Set up static file serving with proper headers
+app.use('/images', express.static(path.join(__dirname, 'public/images'), {
+    setHeaders: (res) => {
+        res.set({
+            'Cache-Control': 'public, max-age=31536000',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Accept',
+            'Access-Control-Allow-Credentials': 'true'
+        });
     }
 }));
-app.use('/uploads/avatars', express.static(path.join(__dirname, 'public/uploads/avatars'), {
-    setHeaders: (res, path) => {
-        res.set('Cache-Control', 'no-cache');
+
+// Serve province images with fallback
+app.use('/images/provinces/:filename', (req, res, next) => {
+    const filePath = path.join(__dirname, 'public/images/provinces', req.params.filename);
+    const fallbackPath = path.join(__dirname, 'public/images/placeholder.jpg');
+    
+    fs.access(filePath, fs.constants.F_OK, (err) => {
+        if (err) {
+            console.log(`Province image not found: ${filePath}, using fallback`);
+            res.sendFile(fallbackPath);
+        } else {
+            res.sendFile(filePath);
+        }
+    });
+});
+
+// Ensure upload directories exist
+const ensureDir = (dirPath) => {
+    const fullPath = path.join(__dirname, 'public', dirPath);
+    if (!fs.existsSync(fullPath)) {
+        fs.mkdirSync(fullPath, { recursive: true });
     }
-}));
-app.use(express.static('public'));
+};
+
+ensureDir('images/provinces');
+ensureDir('uploads/provinces');
 
 // Body parser middleware
 app.use(express.json());
