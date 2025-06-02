@@ -144,10 +144,10 @@ app.get('/images/provinces/:filename', (req, res) => {
   
   // If all else fails, use placeholder
   console.log(`❌ No image found for: ${filename}, using fallback`);
-  res.sendFile(path.join(__dirname, 'public/images/placeholder.jpg'));
+  //res.sendFile(path.join(__dirname, 'public/images/placeholder.jpg'));
 });
 
-// Fallback route for images
+/* Fallback route for images
 app.use('/images/:type/:filename', (req, res, next) => {
     const { type, filename } = req.params;
     const requestedPath = path.join(__dirname, 'public', 'images', type, filename);
@@ -160,7 +160,7 @@ app.use('/images/:type/:filename', (req, res, next) => {
         }
         next();
     });
-});
+}); */
 
 // Debug route to check if server is running
 app.get('/api/health', (req, res) => {

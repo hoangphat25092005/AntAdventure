@@ -58,23 +58,25 @@ const getImageUrl = () => {
   return `${baseUrl}/images/provinces/province_${paddedId}.jpg`;
 };
 
-  // Simplified image error handler
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    const target = e.target as HTMLImageElement;
-    
-    // Prevent infinite loops if we're already using a fallback
-    if (target.src.includes('via.placeholder.com')) {
-      return;
-    }
 
-    console.error('⚠️ Image failed to load:', {
-      province: province.name,
-      provinceId: province.id
-    });
-
-    // Use placeholder as fallback
-    target.src = `https://via.placeholder.com/300x200?text=${encodeURIComponent(province.name)}`;
-  };
+const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+  const target = e.target as HTMLImageElement;
+  
+  // Set a gray background on the image itself rather than hiding it
+  target.style.opacity = '0';
+  
+  // Find the parent container and add gray background
+  const container = target.parentElement;
+  if (container) {
+    container.style.backgroundColor = '#e2e8f0'; // A light gray color (Tailwind gray-200)
+  }
+  
+  // Just log the error without creating additional elements
+  console.error('⚠️ Image failed to load:', {
+    province: province.name,
+    provinceId: province.id
+  });
+};
 
   return (
     <Popup 
@@ -101,7 +103,7 @@ const getImageUrl = () => {
             src={getImageUrl()}
             alt={province.name}
             className="absolute inset-0 object-cover w-full h-full transition-all duration-700 group-hover:scale-110 group-hover:brightness-110"
-            onError={handleImageError}
+            //onError={handleImageError}
             loading="eager"
           />
         </div>
