@@ -9,13 +9,6 @@ node_modules/
 .env.production.local
 
 # Package files
-package-lock.json
-package.json
-
-# Backend specific files
-backend/.env
-backend/package-lock.json
-backend/package.json
 
 # Build files
 /build
