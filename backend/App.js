@@ -24,11 +24,42 @@ app.use(express.urlencoded({ extended: true }));
 
 // Update CORS settings to accept requests from your frontend domain
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://antadventure.onrender.com', 'https://*.onrender.com'] 
-    : 'http://localhost:3000',
-  credentials: true
+    origin: function (origin, callback) {
+        // Allow same-origin requests (when origin is undefined)
+        if (!origin) return callback(null, true);
+        
+        const allowedOrigins = process.env.NODE_ENV === 'production' 
+            ? [
+                'https://antadventure.onrender.com',
+                'https://antadventure.onrender.com', // Add your actual frontend URL
+                /^https:\/\/.*\.onrender\.com$/ // Allow all onrender.com subdomains
+              ]
+            : [
+                'http://localhost:3000',
+                'http://127.0.0.1:3000'
+              ];
+        
+        const isAllowed = allowedOrigins.some(allowedOrigin => {
+            if (typeof allowedOrigin === 'string') {
+                return origin === allowedOrigin;
+            } else if (allowedOrigin instanceof RegExp) {
+                return allowedOrigin.test(origin);
+            }
+            return false;
+        });
+        
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    exposedHeaders: ['Set-Cookie']
 }));
+
 
 // Debug middleware to log all requests
 app.use((req, res, next) => {
@@ -49,11 +80,12 @@ app.use(session({
     cookie: {
         maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // Enable in production
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        path: '/' // Ensure cookie is available across all paths
+        secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Cross-site cookies in production
+        path: '/',
+        domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined // Allow subdomain cookies
     }
-})); 
+}));
 
 // Initialize Passport
 app.use(passport.initialize());

@@ -110,6 +110,7 @@ router.get('/me', (req, res) => {
             res.status(500).json({ message: 'Server error' });
         });
 });
+/*
 router.get('/check-auth', (req, res) => {
     if (!req.session.userId) {
         return res.status(401).json({ 
@@ -123,6 +124,7 @@ router.get('/check-auth', (req, res) => {
         userId: req.session.userId 
     });
 });
+*/
 
 // Avatar update route
 router.post('/update-avatar', upload.single('avatar'), authController.updateAvatar);
