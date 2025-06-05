@@ -26,12 +26,14 @@ const upload = multer({
         const filetypes = /jpeg|jpg|png|gif/;
         const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = filetypes.test(file.mimetype);
+        
         if (mimetype && extname) {
             return cb(null, true);
         }
         cb(new Error('Only image files are allowed!'));
     }
 });
+
 const passport = require('../config/passport');
 
 //register user
@@ -62,16 +64,8 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
         }),
         googleController.googleCallback
     );
-} else {
-    // Fallback route for when Google auth is not configured
-    router.get('/auth/google', (req, res) => {
-        console.warn('Google authentication requested but not configured');
-        res.status(501).json({ 
-            error: 'Google authentication not configured',
-            message: 'Please configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in the server environment'
-        });
-    });
 }
+// REMOVE THE FALLBACK ROUTE - this might be causing the path-to-regexp error
 
 //check admin status - using the new middleware
 router.get('/checkAdmin', isAdmin, (req, res) => {
@@ -87,7 +81,7 @@ router.get('/me', authController.checkLogin, (req, res) => {
     if (!req.user) {
         return res.status(401).json({ message: 'Not authenticated' });
     }
-      res.json({
+    res.json({
         username: req.user.username,
         email: req.user.email,
         isAdmin: req.user.isAdmin,
@@ -99,5 +93,3 @@ router.get('/me', authController.checkLogin, (req, res) => {
 router.post('/update-avatar', upload.single('avatar'), authController.updateAvatar);
 
 module.exports = router;
-
-

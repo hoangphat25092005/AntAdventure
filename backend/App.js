@@ -216,10 +216,13 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/provinces', provinceRoutes);
 
-// 404 handler for API routes
-app.use('/api/*', (req, res) => {
-    console.log(`404 API: ${req.method} ${req.url}`);
-    res.status(404).json({ message: 'API route not found' });
+// 404 handler for API routes - FIXED VERSION (Option 4)
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) {
+        console.log(`404 API: ${req.method} ${req.url}`);
+        return res.status(404).json({ message: 'API route not found' });
+    }
+    next();
 });
 
 // Serve static files from the React frontend app if in production
