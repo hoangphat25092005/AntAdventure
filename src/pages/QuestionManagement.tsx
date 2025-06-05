@@ -211,7 +211,7 @@ const QuestionManager: React.FC = () => {
 
     // Filter questions list based on search term
     const filteredQuestionsByProvince = Array.from(new Set(questions.map(q => q.provinceName)))
-        .filter(provinceName => 
+        .filter((provinceName: string) => 
             provinceName.toLowerCase().includes(questionListSearchTerm.toLowerCase())
         )
         .sort((a, b) => a.localeCompare(b, 'vi-VN'));
