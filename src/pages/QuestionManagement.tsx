@@ -214,7 +214,7 @@ const QuestionManager: React.FC = () => {
         .filter((provinceName: string) => 
             provinceName.toLowerCase().includes(questionListSearchTerm.toLowerCase())
         )
-        .sort((a, b) => a.localeCompare(b, 'vi-VN'));
+        .sort((a: string, b: string) => a.localeCompare(b, 'vi-VN'));
 
     if (!isAdmin) {
         return <div>Access denied</div>;
