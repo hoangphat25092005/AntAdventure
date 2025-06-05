@@ -4,7 +4,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const authController = require('../controllers/user.controller');
-const googleController = require('../controllers/google.controller');
+//const googleController = require('../controllers/google.controller');
 const { isAdmin } = require('../middleware/auth.middleware');
 
 // Configure multer for avatar uploads
@@ -51,20 +51,21 @@ router.post('/verifyAdmin', authController.verifyAdmin);
 //check login status
 router.get('/check-auth', authController.checkLogin);
 
+// And comment out the Google routes:
 // Google authentication routes - only if credentials are configured
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-    router.get('/auth/google', 
-        passport.authenticate('google', { scope: ['profile', 'email'] })
-    );
+// if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+//     router.get('/auth/google', 
+//         passport.authenticate('google', { scope: ['profile', 'email'] })
+//     );
 
-    router.get('/auth/google/callback', 
-        passport.authenticate('google', { 
-            failureRedirect: process.env.FRONTEND_URL || 'http://localhost:3000',
-            session: true 
-        }),
-        googleController.googleCallback
-    );
-}
+//     router.get('/auth/google/callback', 
+//         passport.authenticate('google', { 
+//             failureRedirect: process.env.FRONTEND_URL || 'http://localhost:3000',
+//             session: true 
+//         }),
+//         googleController.googleCallback
+//     );
+// }
 // REMOVE THE FALLBACK ROUTE - this might be causing the path-to-regexp error
 
 //check admin status - using the new middleware
