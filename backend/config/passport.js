@@ -22,7 +22,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     
     // Fix the callback URL - ensure it's properly formatted
     const callbackURL = process.env.NODE_ENV === 'production' 
-        ? `${process.env.BACKEND_URL || 'https://your-backend-url.onrender.com'}/api/users/auth/google/callback`
+        ? `${process.env.BACKEND_URL || 'https://antadventure.onrender.com'}/api/users/auth/google/callback`
         : 'http://localhost:3001/api/users/auth/google/callback';
     
     passport.use(
