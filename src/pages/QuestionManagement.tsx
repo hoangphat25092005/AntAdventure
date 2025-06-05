@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { provinces } from '../data/provinceData';
+import config from '../config';
 
 interface Question {
     _id?: string;
@@ -37,7 +38,7 @@ const QuestionManager: React.FC = () => {
 
     const checkAdminStatus = async () => {
         try {
-            const response = await fetch('http://localhost:3001/api/users/checkAdmin', {
+            const response = await fetch(`${config.API_URL}/api/users/checkAdmin`, {
                 credentials: 'include'
             });
             if (response.ok) {
@@ -52,7 +53,7 @@ const QuestionManager: React.FC = () => {
         }
     };    const fetchQuestions = async () => {
         try {
-            const response = await fetch('http://localhost:3001/api/questions/getAllQuestions', {
+            const response = await fetch(`${config.API_URL}/api/questions/getAllQuestions`, {
                 credentials: 'include'
             });
             if (response.ok) {
@@ -130,8 +131,8 @@ const QuestionManager: React.FC = () => {
                 hasImage: !!selectedFile
             });
             const url = editMode
-                ? `http://localhost:3001/api/questions/updateQuestion/${selectedQuestionId}`
-                : 'http://localhost:3001/api/questions/addQuestion';
+                ? `${config.API_URL}/api/questions/updateQuestion/${selectedQuestionId}`
+                : `${config.API_URL}/api/questions/addQuestion`;
 
             const response = await fetch(url, {
                 method: editMode ? 'PUT' : 'POST',
@@ -170,7 +171,7 @@ const QuestionManager: React.FC = () => {
         if (!window.confirm('Are you sure you want to delete this question?')) return;
 
         try {
-            const response = await fetch(`http://localhost:3001/api/questions/deleteQuestion/${id}`, {
+            const response = await fetch(`${config.API_URL}/api/questions/deleteQuestion/${id}`, {
                 method: 'DELETE',
                 credentials: 'include'
             });
@@ -445,7 +446,7 @@ const QuestionManager: React.FC = () => {
                                                     {question.image && (
                                                         <div className="flex-shrink-0 ml-4">
                                                             <img
-                                                                src={`http://localhost:3001${question.image}`}
+                                                                src={`${config.API_URL}${question.image}`}
                                                                 alt="Question visual"
                                                                 className="object-cover w-32 h-32 rounded-lg"
                                                             />

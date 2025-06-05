@@ -3,6 +3,7 @@ import { Popup } from 'react-leaflet';
 import { Province } from '../data/provinceData';
 import { useNavigate } from 'react-router-dom';
 import './map.css';
+import config from '../config';
 
 interface ProvincePopupProps {
   province: Province;
@@ -33,7 +34,7 @@ const ProvincePopup: React.FC<ProvincePopupProps> = ({
   };
 
 const getImageUrl = () => {
-  const baseUrl = 'http://localhost:3001';
+  const baseUrl = `${config.API_URL}`;
   
   console.log('🔍 Getting image URL for:', province.name, 'ID:', province.id, 'Current URL:', localImageUrl);
   

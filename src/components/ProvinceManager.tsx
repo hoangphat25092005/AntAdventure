@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { provinces } from '../data/provinceData';
+import config from '../config';
 
 interface ProvinceDetails {
   provinceId: string;
@@ -38,7 +39,7 @@ const ProvinceManager: React.FC = () => {
 
   const checkAdminStatus = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/users/checkAdmin', {
+      const response = await fetch(`${config.API_URL}/api/users/checkAdmin`, {
         credentials: 'include'
       });
       if (!response.ok) {
@@ -56,7 +57,7 @@ const ProvinceManager: React.FC = () => {
   const fetchProvinceDetails = async (provinceId: string) => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3001/api/provinces/${provinceId}`, {
+      const response = await fetch(`${config.API_URL}/api/provinces/${provinceId}`, {
         credentials: 'include'
       });
       
@@ -178,8 +179,8 @@ const ProvinceManager: React.FC = () => {
 
       const method = selectedProvince ? 'PUT' : 'POST';
       const url = selectedProvince 
-        ? `http://localhost:3001/api/provinces/${selectedProvince}`
-        : 'http://localhost:3001/api/provinces';
+        ? `${config.API_URL}/api/provinces/${selectedProvince}`
+        : `${config.API_URL}/api/provinces`;
 
       const response = await fetch(url, {
         method,

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import config from '../config';
 
 const ResetPassword: React.FC = () => {
     const navigate = useNavigate();
@@ -16,7 +17,7 @@ const ResetPassword: React.FC = () => {
     useEffect(() => {
         // Verify token validity when component mounts
         const verifyToken = async () => {
-            try {                const response = await fetch(`http://localhost:3001/api/reset/verify-reset-token/${token}`);
+            try {                const response = await fetch(`${config.API_URL}/api/reset/verify-reset-token/${token}`);
                 setIsValidToken(response.ok);
                 if (!response.ok) {
                     setError('Invalid or expired reset link');
@@ -49,7 +50,7 @@ const ResetPassword: React.FC = () => {
 
         setIsLoading(true);
 
-        try {            const response = await fetch(`http://localhost:3001/api/reset/reset-password/${token}`, {
+        try {            const response = await fetch(`${config.API_URL}/api/reset/reset-password/${token}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

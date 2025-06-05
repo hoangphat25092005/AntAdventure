@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import axios from 'axios';
 import { provinces as provinceData } from '../data/provinceData';
+import config from '../config';
 
 const QuestionManager: React.FC = () => {
     const navigate = useNavigate();
@@ -32,7 +33,7 @@ const QuestionManager: React.FC = () => {
 
     const checkAdminStatus = async () => {
         try {
-            const response = await fetch('http://localhost:3001/api/users/checkAdmin', {
+            const response = await fetch(`${config.API_URL}/api/users/checkAdmin`, {
                 credentials: 'include'
             });
             if (response.ok) {
@@ -188,10 +189,10 @@ const QuestionManager: React.FC = () => {
             // First, handle wiping if needed
             if (wipeOption === 'wipe') {
                 setImportStatus('Wiping all existing questions...');
-                await axios.delete('http://localhost:3001/api/questions/wipe', { withCredentials: true });
+                await axios.delete(`${config.API_URL}/api/questions/wipe`, { withCredentials: true });
             } else if (wipeOption === 'replace' && provinceFilter) {
                 setImportStatus(`Wiping existing questions for province "${provinceFilter}"...`);
-                await axios.delete(`http://localhost:3001/api/questions/wipe/${encodeURIComponent(provinceFilter)}`, 
+                await axios.delete(`${config.API_URL}/api/questions/wipe/${encodeURIComponent(provinceFilter)}`, 
                     { withCredentials: true });
             }
             
@@ -205,7 +206,7 @@ const QuestionManager: React.FC = () => {
                 setImportStatus(`Importing questions ${i + 1} to ${Math.min(i + batchSize, questionsToImport.length)} of ${questionsToImport.length}...`);
                 
                 try {
-                    const response = await axios.post('http://localhost:3001/api/questions/bulkImport', 
+                    const response = await axios.post(`${config.API_URL}/api/questions/bulkImport`, 
                         { questions: batch },
                         { withCredentials: true }
                     );
@@ -250,7 +251,7 @@ const QuestionManager: React.FC = () => {
         formData.append('excelFile', file);
         
         try {
-            const response = await fetch('http://localhost:3001/api/questions/bulk-import', {
+            const response = await fetch(`${config.API_URL}/api/questions/bulk-import`, {
                 method: 'POST',
                 credentials: 'include',
                 body: formData

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { provinces } from '../data/provinceData';
+import config from '../config';
 
 interface Question {
     _id: string;
@@ -51,7 +52,7 @@ const QuestionTem: React.FC<QuestionProps> = ({ provinceName = 'Unknown Province
             setError(null);
 
             try {                // Check authentication first
-                const authResponse = await fetch('http://localhost:3001/api/users/check-auth', {
+                const authResponse = await fetch(`${config.API_URL}/api/users/check-auth`, {
                     credentials: 'include',
                     headers: {
                         'Accept': 'application/json'
@@ -87,7 +88,7 @@ const QuestionTem: React.FC<QuestionProps> = ({ provinceName = 'Unknown Province
                 console.log('Fetching questions for province:', provinceData.name); // Debug log
                 
                 const response = await fetch(
-                    `http://localhost:3001/api/questions/getQuestionByProvince/${encodeURIComponent(provinceData.name)}`,
+                    `${config.API_URL}/api/questions/getQuestionByProvince/${encodeURIComponent(provinceData.name)}`,
                     { credentials: 'include' }
                 );
                 
@@ -241,7 +242,7 @@ const QuestionTem: React.FC<QuestionProps> = ({ provinceName = 'Unknown Province
                             {currentQuestion.image && (
                                 <div className="mb-6 flex justify-center">
                                     <img
-                                        src={`http://localhost:3001${currentQuestion.image}`}
+                                        src={`${config.API_URL}${currentQuestion.image}`}
                                         alt="Question visual"
                                         className="max-h-48 object-contain rounded-lg shadow-md"
                                     />

@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import Navigation from './Navigation';
 import Logo from '../assets/Logo.png';
 import './LogoAnimation.css';
+import config from '../config';
 
 interface UserInfo {
     username: string;
@@ -56,12 +57,12 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
         }
     }, [isDropdownOpen]);    const checkAuth = async () => {
         try {
-            const response = await fetch('http://localhost:3001/api/users/check-auth', {
+            const response = await fetch(`${config.API_URL}/api/users/check-auth`, {
                 credentials: 'include'
             });
             if (response.ok) {
                 setIsAuthenticated(true);
-                const userResponse = await fetch('http://localhost:3001/api/users/me', {
+                const userResponse = await fetch(`${config.API_URL}/api/users/me`, {
                     credentials: 'include'
                 });
                 if (userResponse.ok) {
@@ -95,7 +96,7 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
         }
     };    const handleLogout = async () => {
         try {
-            const response = await fetch('http://localhost:3001/api/users/logout', {
+            const response = await fetch(`${config.API_URL}/api/users/logout`, {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -136,7 +137,7 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
         formData.append('avatar', file);
 
         try {
-            const response = await fetch('http://localhost:3001/api/users/update-avatar', {
+            const response = await fetch(`${config.API_URL}/api/users/update-avatar`, {
                 method: 'POST',
                 credentials: 'include',
                 body: formData,
@@ -195,13 +196,13 @@ const Header: React.FC<{ className?: string }> = ({ className }) => {
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                             className="flex items-center px-4 py-2 space-x-2 text-white transition-colors duration-200 rounded-lg bg-sky-600 hover:bg-sky-700"
                         >                            {userInfo?.avatar ? (                                <img 
-                                    src={`http://localhost:3001${userInfo.avatar}`}
+                                    src={`${config.API_URL}${userInfo.avatar}`}
                                     alt="User avatar"
                                     title="Click to view full size image"
                                     className="object-cover w-12 h-12 transition-transform rounded-full cursor-pointer hover:scale-105"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        window.open(`http://localhost:3001${userInfo.avatar}`, '_blank');
+                                        window.open(`${config.API_URL}${userInfo.avatar}`, '_blank');
                                     }}
                                 />
                             ) : (

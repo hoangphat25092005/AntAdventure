@@ -22,15 +22,24 @@ connectDB();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Set up CORS for the frontend with proper options
+// Update CORS settings to accept requests from your frontend domain
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    exposedHeaders: ['Set-Cookie']
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://antadventure.onrender.com', 'https://*.onrender.com'] 
+    : 'http://localhost:3000',
+  credentials: true
 }));
 
+// Serve static files from the React frontend app if in production
+if (process.env.NODE_ENV === 'production') {
+  // Serve any static files
+  app.use(express.static(path.join(__dirname, '../build')));
+
+  // Handle React routing, return all requests to React app
+  app.get('*', function(req, res) {
+    res.sendFile(path.join(__dirname, '../build', 'index.html'));
+  });
+}
 // Debug middleware to log all requests
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
@@ -50,12 +59,11 @@ app.use(session({
     cookie: {
         maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
         httpOnly: true,
-        secure: false, // Disabled for development
-        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production', // Enable in production
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/' // Ensure cookie is available across all paths
     }
 })); 
-
 // Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());

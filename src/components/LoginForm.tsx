@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
+import config from '../config';
 
 const LoginForm: React.FC = () => {
     const navigate = useNavigate();
@@ -38,14 +39,14 @@ const LoginForm: React.FC = () => {
         setError('');
 
         try {
-            const response = await fetch('http://localhost:3001/api/users/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify(formData)
-            });
+       const response = await fetch(`${config.API_URL}/api/users/login`, {
+       method: 'POST',
+       headers: {
+        'Content-Type': 'application/json',
+       },
+       credentials: 'include',
+       body: JSON.stringify(formData)
+     });
 
             const data = await response.json();
 
@@ -96,7 +97,7 @@ const LoginForm: React.FC = () => {
                             onSuccess={credentialResponse => {
                                 console.log('Google login success:', credentialResponse);
                                 // Direct redirection to the Google Auth endpoint - this is the simplest approach
-                                window.location.href = `http://localhost:3001/api/users/auth/google`;
+                                window.location.href = `${config.API_URL}/api/users/auth/google`;
                             }}
                             onError={() => {
                                 console.log('Google login failed');

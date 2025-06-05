@@ -6,6 +6,7 @@ import { ProvinceFeatureCollection, MapProps } from '../types/types';
 import { provinceColors, provinces } from '../data/provinceData';
 import ProvincePopup from './ProvincePopup';
 import './map.css';
+import config from '../config';
 
 const center: [number, number] = [12.5474, 108.2220];
 
@@ -97,7 +98,7 @@ const GeoJSONLayer = ({
       }
 
       console.log('Fetching province details...');
-      const response = await fetch('http://localhost:3001/api/provinces');
+      const response = await fetch(`${config.API_URL}/api/provinces`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch province details: ${response.status}`);
@@ -120,7 +121,7 @@ const GeoJSONLayer = ({
           const imageUrl = province.imageUrl ? (
             province.imageUrl.startsWith('http') 
               ? province.imageUrl 
-              : `http://localhost:3001${province.imageUrl.startsWith('/') ? province.imageUrl : `/${province.imageUrl}`}`
+              : `${config.API_URL}${province.imageUrl.startsWith('/') ? province.imageUrl : `/${province.imageUrl}`}`
           ) : `https://via.placeholder.com/300x200?text=${encodeURIComponent(province.name)}`;
 
           details[id] = {
@@ -167,7 +168,7 @@ const GeoJSONLayer = ({
         ...prev[provinceId],
         imageUrl: newImageUrl.startsWith('http') 
           ? newImageUrl 
-          : `http://localhost:3001${newImageUrl.startsWith('/') ? newImageUrl : `/${newImageUrl}`}`
+          : `${config.API_URL}${newImageUrl.startsWith('/') ? newImageUrl : `/${newImageUrl}`}`
       }
     }));
     
