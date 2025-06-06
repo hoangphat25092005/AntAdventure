@@ -68,7 +68,7 @@ const App: React.FC = () => {
     return <AppContent />;
   }
 
-  // Render with GoogleOAuthProvider - directly inline the children
+  // Render with GoogleOAuthProvider
   return (
     <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
       <AppContent />
