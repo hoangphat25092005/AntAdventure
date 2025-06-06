@@ -26,31 +26,39 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID || ''}>
-      <Router>      <div className="fixed flex flex-col w-full h-screen">
-        <Header className="z-20" />
-        <main className="flex-1 overflow-y-auto bg-transparent">
-          <div className="relative z-10">
-            <Routes>
-              <Route path="/" element={<div className="bg-opacity-80"><Home /></div>} />
-              <Route path="/login" element={<div className="bg-opacity-80"><Login /></div>} />
-              <Route path="/register" element={<div className="bg-opacity-80"><Register /></div>} />
-              <Route path="/performance" element={<div className="bg-opacity-80"><Performance /></div>} />
-              <Route path="/review/:provinceName" element={<div className="bg-opacity-80"><Review /></div>} />
-              <Route path="/about-us" element={<div className="bg-opacity-80"><AboutUs /></div>} />              <Route path="/multichoice/:provinceName" element={<div className="bg-opacity-80"><Question /></div>} />
-              <Route path="/feedback" element={<div className="bg-opacity-80"><Feedback /></div>} />              <Route path="/manage-questions" element={<div className="bg-opacity-80"><QuestionManagement /></div>} />
-              <Route path="/manage-provinces" element={<div className="bg-opacity-80"><ProvinceManagement /></div>} />              <Route path="/admin-login" element={<div className="bg-opacity-80"><AdminLogin /></div>} />
-              <Route path="/admin-register" element={<div className="bg-opacity-80"><AdminRegister /></div>} />
-              <Route path="/import" element={<QuestionImport />} />
-              <Route path="/forgot-password" element={<div className="bg-opacity-80"><ForgotPasswordPage /></div>} />
-              <Route path="/reset-password/:token" element={<div className="bg-opacity-80"><ResetPasswordPage /></div>} />
-             </Routes>
+    <GoogleOAuthProvider 
+      clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID || ''}
+      children={
+        <Router>
+          <div className="fixed flex flex-col w-full h-screen">
+            <Header className="z-20" />
+            <main className="flex-1 overflow-y-auto bg-transparent">
+              <div className="relative z-10">
+                <Routes>
+                  <Route path="/" element={<div className="bg-opacity-80"><Home /></div>} />
+                  <Route path="/login" element={<div className="bg-opacity-80"><Login /></div>} />
+                  <Route path="/register" element={<div className="bg-opacity-80"><Register /></div>} />
+                  <Route path="/performance" element={<div className="bg-opacity-80"><Performance /></div>} />
+                  <Route path="/review/:provinceName" element={<div className="bg-opacity-80"><Review /></div>} />
+                  <Route path="/about-us" element={<div className="bg-opacity-80"><AboutUs /></div>} />
+                  <Route path="/multichoice/:provinceName" element={<div className="bg-opacity-80"><Question /></div>} />
+                  <Route path="/feedback" element={<div className="bg-opacity-80"><Feedback /></div>} />
+                  <Route path="/manage-questions" element={<div className="bg-opacity-80"><QuestionManagement /></div>} />
+                  <Route path="/manage-provinces" element={<div className="bg-opacity-80"><ProvinceManagement /></div>} />
+                  <Route path="/admin-login" element={<div className="bg-opacity-80"><AdminLogin /></div>} />
+                  <Route path="/admin-register" element={<div className="bg-opacity-80"><AdminRegister /></div>} />
+                  <Route path="/import" element={<QuestionImport />} />
+                  <Route path="/forgot-password" element={<div className="bg-opacity-80"><ForgotPasswordPage /></div>} />
+                  <Route path="/reset-password/:token" element={<div className="bg-opacity-80"><ResetPasswordPage /></div>} />
+                </Routes>
+              </div>
+            </main>
+            <TalkingAnt />
+            <Footer />
           </div>
-        </main>
-        <TalkingAnt />
-        <Footer />      </div>
-    </Router>
-    </GoogleOAuthProvider>
+        </Router>
+      }
+    />
   );
 };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import config from '../config';
 
 const FeedBackForm: React.FC = () => {
     const navigate = useNavigate();
@@ -11,7 +12,7 @@ const FeedBackForm: React.FC = () => {
         // Check authentication status when component mounts
         checkAuth();
     }, []);    const checkAuth = async () => {
-        try {            const response = await fetch('http://localhost:3001/api/users/check-auth', {
+        try {            const response = await fetch(`${config.API_URL}/api/users/check-auth`, {
                 credentials: 'include' // Important for sending cookies
             });
             if (response.ok) {
@@ -37,7 +38,7 @@ const FeedBackForm: React.FC = () => {
         if (!feedback.trim()) {
             setError('Please enter your feedback');
             return;
-        }        try {            const response = await fetch('http://localhost:3001/api/feedback/addFeedback', {
+        }        try {            const response = await fetch(`${config.API_URL}/api/feedback/addFeedback`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

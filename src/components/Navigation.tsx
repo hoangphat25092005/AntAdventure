@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import config from '../config';
 
 const Navigation: React.FC = () => {
     const location = useLocation();
@@ -11,7 +12,7 @@ const Navigation: React.FC = () => {
 
     const checkAdminStatus = async () => {
         try {
-            const response = await fetch('http://localhost:3001/api/users/checkAdmin', {
+            const response = await fetch(`${config.API_URL}/api/users/checkAdmin`, {
                 credentials: 'include'
             });
             setIsAdmin(response.ok);

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import config from '../config';
 
 const ForgotPassword: React.FC = () => {
     const navigate = useNavigate();
@@ -14,7 +15,7 @@ const ForgotPassword: React.FC = () => {
         setSuccess('');
         setIsLoading(true);
 
-        try {            const response = await fetch('http://localhost:3001/api/reset/forgot-password', {
+        try {            const response = await fetch(`${config.API_URL}/api/reset/forgot-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import config from '../config';
 
 const AdminRegisForm: React.FC = () => {
     const navigate = useNavigate();
@@ -28,7 +29,7 @@ const AdminRegisForm: React.FC = () => {
             return;
         }
 
-        try {            const response = await fetch('http://localhost:3001/api/users/register', {
+        try {            const response = await fetch(`${config.API_URL}/api/users/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

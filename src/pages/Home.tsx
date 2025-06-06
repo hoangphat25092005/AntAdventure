@@ -4,7 +4,7 @@ import Leaderboard, { sampleLeaderboardData } from '../components/Leaderboard';
 import ProvinceInfo from '../components/ProvinceInfo';
 import CopperDrumImage from '../assets/CopperDrum.png'; 
 import { provinces } from '../data/provinceData';
-
+import config from '../config';
 const Home: React.FC = () => {
     const [selectedProvinceId, setSelectedProvinceId] = useState<string | null>(null);
     

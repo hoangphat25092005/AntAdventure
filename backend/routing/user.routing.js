@@ -26,12 +26,14 @@ const upload = multer({
         const filetypes = /jpeg|jpg|png|gif/;
         const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = filetypes.test(file.mimetype);
+        
         if (mimetype && extname) {
             return cb(null, true);
         }
         cb(new Error('Only image files are allowed!'));
     }
 });
+
 const passport = require('../config/passport');
 
 //register user
@@ -57,47 +59,75 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
     router.get('/auth/google/callback', 
         passport.authenticate('google', { 
-            failureRedirect: process.env.FRONTEND_URL || 'http://localhost:3000',
+            failureRedirect: process.env.NODE_ENV === 'production' 
+                ? 'https://antventure.onrender.com/login?error=auth_failed'
+                : 'http://localhost:3000/login?error=auth_failed',
             session: true 
         }),
         googleController.googleCallback
     );
 } else {
-    // Fallback route for when Google auth is not configured
-    router.get('/auth/google', (req, res) => {
-        console.warn('Google authentication requested but not configured');
-        res.status(501).json({ 
-            error: 'Google authentication not configured',
-            message: 'Please configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in the server environment'
-        });
-    });
+    console.warn('Google OAuth routes not configured - missing credentials');
 }
+// REMOVE THE FALLBACK ROUTE - this might be causing the path-to-regexp error
 
 //check admin status - using the new middleware
 router.get('/checkAdmin', isAdmin, (req, res) => {
     res.status(200).json({ 
         success: true, 
         isAdmin: true,
-        username: req.user.username 
+        username: req.user ? req.user.username : 'Unknown'
     });
 });
 
+
 // Get user info
-router.get('/me', authController.checkLogin, (req, res) => {
-    if (!req.user) {
-        return res.status(401).json({ message: 'Not authenticated' });
+router.get('/me', (req, res) => {
+    // Check if user is authenticated via session
+    if (!req.session.userId) {
+        return res.status(401).json({ 
+            authenticated: false,
+            message: 'Not authenticated' 
+        });
     }
-      res.json({
-        username: req.user.username,
-        email: req.user.email,
-        isAdmin: req.user.isAdmin,
-        avatar: req.user.avatar
+    
+    // Fetch user from database
+    const User = require('../models/user.model');
+    User.findById(req.session.userId)
+        .then(user => {
+            if (!user) {
+                return res.status(401).json({ message: 'User not found' });
+            }
+            res.json({
+                username: user.username,
+                email: user.email,
+                isAdmin: user.role === 'admin',
+                avatar: user.avatar
+            });
+        })
+        .catch(err => {
+            console.error('Error fetching user:', err);
+            res.status(500).json({ message: 'Server error' });
+        });
+});
+
+/*
+router.get('/check-auth', (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ 
+            authenticated: false, 
+            message: 'Not authenticated' 
+        });
+    }
+    
+    res.status(200).json({ 
+        authenticated: true,
+        userId: req.session.userId 
     });
 });
+*/
 
 // Avatar update route
 router.post('/update-avatar', upload.single('avatar'), authController.updateAvatar);
 
 module.exports = router;
-
-

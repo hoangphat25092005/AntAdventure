@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import QuestionTem from '../components/Question';
+import config from '../config';
 
 const Question: React.FC = () => {
     const { provinceName } = useParams<{ provinceName: string }>();
@@ -9,7 +10,7 @@ const Question: React.FC = () => {
 
     useEffect(() => {
         const checkAuthStatus = async () => {
-            try {                const response = await fetch('http://localhost:3001/api/users/check-auth', {
+            try {                const response = await fetch(`${config.API_URL}/api/users/check-auth`, {
                     credentials: 'include',
                     headers: {
                         'Accept': 'application/json'

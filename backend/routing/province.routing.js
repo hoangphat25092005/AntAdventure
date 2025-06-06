@@ -10,7 +10,8 @@ router.get('/:id', provinceController.getProvinceById);
 
 // Admin routes (protected)
 router.post('/', authenticateToken, (req, res, next) => {
-    handleUpload(req, res, (err) => {
+    // FIX: handleUpload is not defined - should be handleProvinceUpload
+    handleProvinceUpload(req, res, (err) => {
         if (err) {
             return res.status(400).json({ message: err.message });
         }

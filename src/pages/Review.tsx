@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { provinces } from "../data/provinceData";
 import ImageUpload from "../components/ImageUpload";
+import config from '../config';
 
 interface ProvinceDetails {
   id: string;
@@ -57,7 +58,7 @@ const ReviewContent: React.FC = () => {
         const exactProvinceName = province.name;
 
         // Fetch province details
-        const detailsResponse = await fetch(`http://localhost:3001/api/provinces/${province.id}`, {
+        const detailsResponse = await fetch(`${config.API_URL}/api/provinces/${province.id}`, {
           credentials: 'include'
         });
 
@@ -65,7 +66,7 @@ const ReviewContent: React.FC = () => {
           const details = await detailsResponse.json();
           setProvinceDetails(details);
         }        // Fetch questions for the province using exact name
-        const questionsResponse = await fetch(`http://localhost:3001/api/questions/getQuestionByProvince/${encodeURIComponent(exactProvinceName)}`, {
+        const questionsResponse = await fetch(`${config.API_URL}/api/questions/getQuestionByProvince/${encodeURIComponent(exactProvinceName)}`, {
           credentials: 'include'
         });        if (questionsResponse.ok) {
           const data = await questionsResponse.json();
@@ -116,7 +117,7 @@ const ReviewContent: React.FC = () => {
     formData.append('attractions', JSON.stringify(provinceDetails.attractions));
 
     try {
-      const response = await fetch(`http://localhost:3001/api/provinces/${provinceDetails.id}`, {
+      const response = await fetch(`${config.API_URL}/api/provinces/${provinceDetails.id}`, {
         method: 'PUT',
         credentials: 'include',
         body: formData,
@@ -144,7 +145,7 @@ const ReviewContent: React.FC = () => {
     formData.append('provinceName', provinceDetails?.name || '');
 
     try {
-      const response = await fetch(`http://localhost:3001/api/questions/updateQuestion/${currentQuestion._id}`, {
+      const response = await fetch(`${config.API_URL}/api/questions/updateQuestion/${currentQuestion._id}`, {
         method: 'PUT',
         credentials: 'include',
         body: formData,
@@ -178,8 +179,8 @@ const ReviewContent: React.FC = () => {
                 src={provinceDetails.imageUrl?.startsWith('http') 
                   ? provinceDetails.imageUrl 
                   : provinceDetails.imageUrl?.startsWith('/') 
-                    ? `http://localhost:3001${provinceDetails.imageUrl}`
-                    : `http://localhost:3001/uploads/provinces/${provinceDetails.imageUrl}`}
+                    ? `${config.API_URL}${provinceDetails.imageUrl}`
+                    : `${config.API_URL}/uploads/provinces/${provinceDetails.imageUrl}`}
                 alt={`${provinceDetails.name} view`}
                 className="object-cover w-full h-48 transition-all duration-700 rounded-lg group-hover:scale-110 group-hover:brightness-110"
                 onError={(e) => {
@@ -339,7 +340,7 @@ const ReviewContent: React.FC = () => {
                           <div className="mt-4">                            <img 
                               src={currentQuestion.image?.startsWith('http') 
                                 ? currentQuestion.image 
-                                : `http://localhost:3001${currentQuestion.image}`} 
+                                : `${config.API_URL}${currentQuestion.image}`} 
                               alt="Question" 
                               className="h-auto max-w-full rounded-lg shadow-md"
                               onError={(e) => {

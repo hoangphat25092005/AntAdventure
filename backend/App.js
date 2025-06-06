@@ -22,21 +22,66 @@ connectDB();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Set up CORS for the frontend with proper options
+// Update CORS settings to accept requests from your frontend domain
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: function (origin, callback) {
+        // Allow same-origin requests (when origin is undefined)
+        if (!origin) return callback(null, true);
+        
+        const allowedOrigins = process.env.NODE_ENV === 'production' 
+            ? [
+                'https://antventure.onrender.com', // Your exact domain
+                process.env.FRONTEND_URL || 'https://antventure.onrender.com',
+                /^https:\/\/.*\.onrender\.com$/ // Allow all onrender.com subdomains
+              ]
+            : [
+                'http://localhost:3000',
+                'http://127.0.0.1:3000'
+              ];
+        
+        const isAllowed = allowedOrigins.some(allowedOrigin => {
+            if (typeof allowedOrigin === 'string') {
+                return origin === allowedOrigin;
+            } else if (allowedOrigin instanceof RegExp) {
+                return allowedOrigin.test(origin);
+            }
+            return false;
+        });
+        
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            console.log(`CORS blocked origin: ${origin}`);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    exposedHeaders: ['Set-Cookie']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+    exposedHeaders: ['Set-Cookie'],
+    optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
 }));
+app.get('/api/debug-cookies', (req, res) => {
+    res.json({
+        sessionID: req.sessionID,
+        session: req.session,
+        cookies: req.headers.cookie,
+        userId: req.session.userId,
+        headers: {
+            origin: req.headers.origin,
+            'user-agent': req.headers['user-agent']
+        }
+    });
+});
 
 // Debug middleware to log all requests
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
-
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+}
 // Session middleware
 app.use(session({
     secret: process.env.SESSION_SECRET || '12345',
@@ -50,11 +95,12 @@ app.use(session({
     cookie: {
         maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
         httpOnly: true,
-        secure: false, // Disabled for development
-        sameSite: 'lax',
-        path: '/' // Ensure cookie is available across all paths
+        secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Changed from 'strict' to 'none'
+        path: '/',
+        // Remove domain setting completely
     }
-})); 
+}));
 
 // Initialize Passport
 app.use(passport.initialize());
@@ -144,23 +190,8 @@ app.get('/images/provinces/:filename', (req, res) => {
   
   // If all else fails, use placeholder
   console.log(`❌ No image found for: ${filename}, using fallback`);
-  //res.sendFile(path.join(__dirname, 'public/images/placeholder.jpg'));
+  return res.status(404).json({ message: 'Image not found' });
 });
-
-/* Fallback route for images
-app.use('/images/:type/:filename', (req, res, next) => {
-    const { type, filename } = req.params;
-    const requestedPath = path.join(__dirname, 'public', 'images', type, filename);
-    const fallbackPath = path.join(__dirname, 'public', 'images', 'placeholder.jpg');
-    
-    fs.access(requestedPath, fs.constants.F_OK, (err) => {
-        if (err) {
-            console.log(`Image not found: ${requestedPath}, using fallback`);
-            return res.sendFile(fallbackPath);
-        }
-        next();
-    });
-}); */
 
 // Debug route to check if server is running
 app.get('/api/health', (req, res) => {
@@ -232,11 +263,32 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/provinces', provinceRoutes);
 
-// 404 handler
-app.use((req, res) => {
-    console.log(`404: ${req.method} ${req.url}`);
-    res.status(404).json({ message: 'Route not found' });
+// 404 handler for API routes - FIXED VERSION (Option 4)
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) {
+        console.log(`404 API: ${req.method} ${req.url}`);
+        return res.status(404).json({ message: 'API route not found' });
+    }
+    next();
 });
+
+// Serve static files from the React frontend app if in production
+if (process.env.NODE_ENV === 'production') {
+  // Serve any static files
+  app.use(express.static(path.join(__dirname, '../build')));
+
+  // Handle React routing, return all requests to React app
+  // This MUST be the last route
+  app.get('*', function(req, res) {
+    res.sendFile(path.join(__dirname, '../build', 'index.html'));
+  });
+} else {
+  // Development 404 handler
+  app.use((req, res) => {
+      console.log(`404: ${req.method} ${req.url}`);
+      res.status(404).json({ message: 'Route not found' });
+  });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -251,6 +303,6 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
 // Add this after your other routes
 const { GridFSBucket } = require('mongodb');
-
