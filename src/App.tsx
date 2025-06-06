@@ -70,7 +70,7 @@ const App: React.FC = () => {
 
   // Render with GoogleOAuthProvider
   return (
-    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
+    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID!}>
       <AppContent />
     </GoogleOAuthProvider>
   );
