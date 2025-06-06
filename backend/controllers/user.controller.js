@@ -212,7 +212,7 @@ const forgotPassword = async (req, res) => {
         user.resetPasswordExpires = resetTokenExpires;
         await user.save();
 
-        // Create nodemailer transport - FIX: Change createTransporter to createTransport
+        // Create nodemailer transport
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
@@ -221,12 +221,14 @@ const forgotPassword = async (req, res) => {
             }
         });
 
-        // Dynamic reset URL based on environment
+        // Dynamic reset URL based on environment - FIX: Remove trailing slash
         const frontendUrl = process.env.NODE_ENV === 'production' 
             ? (process.env.FRONTEND_URL || 'https://antventure.onrender.com')
             : 'http://localhost:3000';
         
-        const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
+        // Ensure no double slashes by removing any trailing slash from frontendUrl
+        const cleanFrontendUrl = frontendUrl.replace(/\/$/, '');
+        const resetUrl = `${cleanFrontendUrl}/reset-password/${resetToken}`;
         
         const mailOptions = {
             from: process.env.EMAIL_USER,
