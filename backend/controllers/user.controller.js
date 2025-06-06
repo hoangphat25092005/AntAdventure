@@ -39,24 +39,43 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
     try {
         const { username, password } = req.body;
+        console.log('🔐 Login attempt for:', username);
+        console.log('🌍 Request origin:', req.headers.origin);
+        console.log('📧 Request headers:', {
+            'user-agent': req.headers['user-agent'],
+            'cookie': req.headers.cookie ? 'Present' : 'Not present'
+        });
+        
         if (!username || !password) {
             return res.status(400).json({ message: "All fields are required" });
         }
+        
         const user = await User.findOne({ username });
         if (!user) {
             return res.status(400).json({ message: "Invalid username or password" });
-        }        const isMatch = await bcrypt.compare(password, user.password);
+        }
+        
+        const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: "Invalid username or password" });
         }
-        req.session.userId = user._id; // Store user ID in session
+        
+        req.session.userId = user._id;
+        console.log('✅ Session created for user:', user._id);
+        console.log('🆔 Session ID:', req.sessionID);
+        console.log('🍪 Session cookie will be set with options:', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax'
+        });
+        
         return res.status(200).json({ 
             message: "Login successful", 
             success: true,
             username: user.username 
         });
     } catch (error) {
-        console.error("Error logging in user:", error);
+        console.error("❌ Error logging in user:", error);
         return res.status(500).json({ message: "Internal server error", error: error.message });
     }
 };
@@ -132,7 +151,12 @@ const verifyAdmin = async (req, res) => {
 // Check login status
 const checkLogin = async (req, res) => {
     try {
+        console.log('🔍 Auth check - Session ID:', req.sessionID);
+        console.log('👤 Auth check - User ID from session:', req.session.userId);
+        console.log('🍪 Auth check - Cookie header:', req.headers.cookie ? 'Present' : 'Not present');
+        
         if (!req.session.userId) {
+            console.log('❌ No userId in session');
             return res.status(401).json({ 
                 success: false,
                 message: "Not authenticated" 
@@ -141,25 +165,28 @@ const checkLogin = async (req, res) => {
 
         const user = await User.findById(req.session.userId);
         if (!user) {
+            console.log('❌ User not found in database');
             return res.status(401).json({ 
                 success: false,
                 message: "User not found" 
             });
-        }        return res.status(200).json({ 
+        }
+
+        console.log('✅ User authenticated successfully:', user.username);
+        return res.status(200).json({ 
             success: true,
             username: user.username,
             role: user.role,
             avatar: user.avatar
         });
     } catch (error) {
-        console.error("Error checking login status:", error);
+        console.error("❌ Error checking login status:", error);
         return res.status(500).json({ 
             success: false,
             message: "Internal server error" 
         });
     }
 };
-
 // Forgot password
 const forgotPassword = async (req, res) => {
     try {

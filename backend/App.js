@@ -30,8 +30,7 @@ app.use(cors({
         
         const allowedOrigins = process.env.NODE_ENV === 'production' 
             ? [
-                'https://antadventure.onrender.com',
-                'https://antadventure.onrender.com', // Add your actual frontend URL
+                process.env.FRONTEND_URL || 'https://antadventure.onrender.com', // Your actual Render URL
                 /^https:\/\/.*\.onrender\.com$/ // Allow all onrender.com subdomains
               ]
             : [
@@ -51,6 +50,7 @@ app.use(cors({
         if (isAllowed) {
             callback(null, true);
         } else {
+            console.log(`CORS blocked origin: ${origin}`); // Add logging
             callback(new Error('Not allowed by CORS'));
         }
     },
@@ -81,9 +81,10 @@ app.use(session({
         maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Cross-site cookies in production
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Change to 'strict' for same-domain
         path: '/',
-        domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined // Allow subdomain cookies
+        // Remove domain setting for same-domain deployment
+        // domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
     }
 }));
 
