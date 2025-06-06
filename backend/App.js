@@ -31,7 +31,7 @@ app.use(cors({
         const allowedOrigins = process.env.NODE_ENV === 'production' 
             ? [
                 'https://antventure.onrender.com', // Your exact domain
-                process.env.FRONTEND_URL || 'https://antadventure.onrender.com',
+                process.env.FRONTEND_URL || 'https://antventure.onrender.com',
                 /^https:\/\/.*\.onrender\.com$/ // Allow all onrender.com subdomains
               ]
             : [
