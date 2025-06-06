@@ -30,7 +30,8 @@ app.use(cors({
         
         const allowedOrigins = process.env.NODE_ENV === 'production' 
             ? [
-                process.env.FRONTEND_URL || 'https://antadventure.onrender.com', // Your actual Render URL
+                'https://antventure.onrender.com', // Your exact domain
+                process.env.FRONTEND_URL || 'https://antadventure.onrender.com',
                 /^https:\/\/.*\.onrender\.com$/ // Allow all onrender.com subdomains
               ]
             : [
@@ -50,23 +51,37 @@ app.use(cors({
         if (isAllowed) {
             callback(null, true);
         } else {
-            console.log(`CORS blocked origin: ${origin}`); // Add logging
+            console.log(`CORS blocked origin: ${origin}`);
             callback(new Error('Not allowed by CORS'));
         }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    exposedHeaders: ['Set-Cookie']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+    exposedHeaders: ['Set-Cookie'],
+    optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
 }));
-
+app.get('/api/debug-cookies', (req, res) => {
+    res.json({
+        sessionID: req.sessionID,
+        session: req.session,
+        cookies: req.headers.cookie,
+        userId: req.session.userId,
+        headers: {
+            origin: req.headers.origin,
+            'user-agent': req.headers['user-agent']
+        }
+    });
+});
 
 // Debug middleware to log all requests
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
-
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+}
 // Session middleware
 app.use(session({
     secret: process.env.SESSION_SECRET || '12345',
@@ -81,10 +96,9 @@ app.use(session({
         maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // Change to 'strict' for same-domain
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Changed from 'strict' to 'none'
         path: '/',
-        // Remove domain setting for same-domain deployment
-        // domain: process.env.NODE_ENV === 'production' ? '.onrender.com' : undefined
+        // Remove domain setting completely
     }
 }));
 

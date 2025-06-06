@@ -115,7 +115,13 @@ const logoutUser = async (req, res) => {
             if (err) {
                 return res.status(500).json({ message: "Error logging out", error: err.message });
             }
-            res.clearCookie('connect.sid'); // Clear the session cookie
+            // Clear the session cookie with the same options as when it was set
+            res.clearCookie('connect.sid', {
+                path: '/',
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+            });
             return res.status(200).json({ message: "Logged out successfully", success: true });
         });
     } catch (error) {
