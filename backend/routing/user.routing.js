@@ -60,7 +60,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     router.get('/auth/google/callback', 
         passport.authenticate('google', { 
             failureRedirect: process.env.NODE_ENV === 'production' 
-                ? 'https://antadventure.onrender.com/login?error=auth_failed'
+                ? 'https://antventure.onrender.com/login?error=auth_failed'
                 : 'http://localhost:3000/login?error=auth_failed',
             session: true 
         }),
