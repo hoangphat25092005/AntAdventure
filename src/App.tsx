@@ -21,18 +21,6 @@ import QuestionImport from './pages/Import';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 
-// Define the OAuth Provider wrapper with explicit children type
-interface GoogleOAuthWrapperProps {
-  children: ReactNode;
-  clientId: string;
-}
-
-const GoogleOAuthWrapper: React.FC<GoogleOAuthWrapperProps> = ({ children, clientId }) => (
-  <GoogleOAuthProvider clientId={clientId}>
-    {children}
-  </GoogleOAuthProvider>
-);
-
 const App: React.FC = () => {
   useEffect(() => {
     console.log('Google Client ID:', process.env.REACT_APP_GOOGLE_CLIENT_ID);
@@ -80,11 +68,11 @@ const App: React.FC = () => {
     return <AppContent />;
   }
 
-  // Render with GoogleOAuthProvider using explicit children typing
+  // Render with GoogleOAuthProvider - directly inline the children
   return (
-    <GoogleOAuthWrapper clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
+    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
       <AppContent />
-    </GoogleOAuthWrapper>
+    </GoogleOAuthProvider>
   );
 };
 
