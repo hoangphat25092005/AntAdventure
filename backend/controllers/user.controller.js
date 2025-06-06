@@ -212,8 +212,8 @@ const forgotPassword = async (req, res) => {
         user.resetPasswordExpires = resetTokenExpires;
         await user.save();
 
-        // Create nodemailer transport
-        const transporter = nodemailer.createTransporter({
+        // Create nodemailer transport - FIX: Change createTransporter to createTransport
+        const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
                 user: process.env.EMAIL_USER,
@@ -244,12 +244,12 @@ const forgotPassword = async (req, res) => {
         await transporter.sendMail(mailOptions);
         res.status(200).json({ message: 'Password reset link sent to email.' });
 
-        // ...existing code...
     } catch (error) {
         console.error('Error in forgot password:', error);
         res.status(500).json({ message: 'Error processing request.' });
     }
 };
+
 
 // Verify reset token
 const verifyResetToken = async (req, res) => {
