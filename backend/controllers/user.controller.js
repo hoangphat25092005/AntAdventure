@@ -213,7 +213,7 @@ const forgotPassword = async (req, res) => {
         await user.save();
 
         // Create nodemailer transport
-        const transporter = nodemailer.createTransport({
+        const transporter = nodemailer.createTransporter({
             service: 'gmail',
             auth: {
                 user: process.env.EMAIL_USER,
@@ -221,8 +221,13 @@ const forgotPassword = async (req, res) => {
             }
         });
 
-        // Email reset link
-        const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
+        // Dynamic reset URL based on environment
+        const frontendUrl = process.env.NODE_ENV === 'production' 
+            ? (process.env.FRONTEND_URL || 'https://antventure.onrender.com')
+            : 'http://localhost:3000';
+        
+        const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
+        
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: user.email,
@@ -239,6 +244,7 @@ const forgotPassword = async (req, res) => {
         await transporter.sendMail(mailOptions);
         res.status(200).json({ message: 'Password reset link sent to email.' });
 
+        // ...existing code...
     } catch (error) {
         console.error('Error in forgot password:', error);
         res.status(500).json({ message: 'Error processing request.' });
